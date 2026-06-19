@@ -37,8 +37,8 @@
     </div>
   </nav>
 
-  <!-- Not logged in state -->
-  <div id="not-logged-in" class="max-w-screen-xl mx-auto px-5 pt-12 pb-20">
+  <!-- Not logged in state (hidden by default in skip mode) -->
+  <div id="not-logged-in" class="hidden max-w-screen-xl mx-auto px-5 pt-12 pb-20">
     <div class="max-w-xl mx-auto text-center">
       <div class="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-1 rounded-full text-sm font-semibold mb-4">
         알리사 서버 • 길드원 전용
@@ -48,11 +48,11 @@
       <p class="mt-4 text-xl text-slate-600">작은 손으로 큰 모험을 함께</p>
 
       <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-        <button onclick="showLoginModal()" 
+        <button id="static-login-btn" 
                 class="flex-1 sm:flex-none px-8 py-3 bg-white border border-[#166534] text-[#166534] font-bold rounded-3xl hover:bg-[#f8faf5]">
           로그인
         </button>
-        <button onclick="showSignupModal()" 
+        <button id="static-signup-btn" 
                 class="flex-1 sm:flex-none px-8 py-3 bg-[#166534] text-white font-bold rounded-3xl hover:bg-[#14532d]">
           회원가입
         </button>
@@ -65,7 +65,7 @@
     </div>
   </div>
 
-  <!-- Main Content (shown only when logged in) -->
+  <!-- Main Content (always shown in skip mode) -->
   <div id="main-content" class="hidden max-w-screen-xl mx-auto px-5 pt-8 pb-16">
     <!-- Welcome bar -->
     <div class="flex items-center justify-between mb-6">
@@ -214,7 +214,7 @@
       <div class="font-extrabold text-2xl mb-1">로그인</div>
       <div class="text-sm text-slate-500 mb-5">아이디(닉네임)와 비밀번호를 입력하세요</div>
 
-      <form id="login-form" onsubmit="handleLogin(event)">
+      <form id="login-form">
         <div class="space-y-4">
           <div>
             <label class="text-xs font-semibold text-slate-500">아이디 (닉네임)</label>
@@ -240,7 +240,7 @@
       <div class="font-extrabold text-2xl mb-1">회원가입</div>
       <div class="text-sm text-slate-500 mb-5">아이디는 닉네임으로 사용됩니다</div>
 
-      <form id="signup-form" onsubmit="handleSignup(event)">
+      <form id="signup-form">
         <div class="space-y-4">
           <div>
             <label class="text-xs font-semibold text-slate-500">아이디 (닉네임)</label>
@@ -321,77 +321,118 @@
     }
 
     async function loadUsers() {
-      if (!db) {
-        console.warn("Firebase not ready, returning empty");
-        return [];
-      }
-      try {
-        const snapshot = await db.collection('guild_members').get();
-        const users = [];
-        snapshot.forEach(doc => {
-          users.push({ id: doc.id, ...doc.data() });
-        });
+      if (db) {
+        try {
+          const snapshot = await db.collection('guild_members').get();
+          const users = [];
+          snapshot.forEach(doc => {
+            users.push({ id: doc.id, ...doc.data() });
+          });
+          return users;
+        } catch (e) {
+          console.error("Failed to load users from Firestore", e);
+          return [];
+        }
+      } else {
+        // Fallback to localStorage for development / if Firebase not configured
+        const raw = localStorage.getItem('daramjwi_users_fallback');
+        let users = raw ? JSON.parse(raw) : [];
+        // Ensure master in fallback
+        const masterId = '신궁상폐';
+        const masterPw = 'qlqjs6491!';
+        if (!users.some(u => u.id === masterId)) {
+          users.push({ id: masterId, password: masterPw, grade: 3, joined: new Date().toISOString() });
+          localStorage.setItem('daramjwi_users_fallback', JSON.stringify(users));
+        }
         return users;
-      } catch (e) {
-        console.error("Failed to load users from Firestore", e);
-        return [];
       }
     }
 
     async function signup(id, password) {
-      if (!db) return { success: false, message: '데이터베이스 연결 실패. Firebase 설정을 확인하세요.' };
-      
-      const idLower = id.toLowerCase();
-      try {
-        const existing = await db.collection('guild_members').doc(id).get();
-        if (existing.exists) {
+      if (db) {
+        try {
+          const existing = await db.collection('guild_members').doc(id).get();
+          if (existing.exists) {
+            return { success: false, message: '이미 사용 중인 아이디입니다.' };
+          }
+          
+          await db.collection('guild_members').doc(id).set({
+            password: password,
+            grade: 1,
+            joined: new Date().toISOString()
+          });
+          
+          return { success: true };
+        } catch (e) {
+          console.error(e);
+          return { success: false, message: '가입 중 오류가 발생했습니다.' };
+        }
+      } else {
+        // Fallback
+        const users = await loadUsers();
+        if (users.some(u => u.id.toLowerCase() === id.toLowerCase())) {
           return { success: false, message: '이미 사용 중인 아이디입니다.' };
         }
-        
-        await db.collection('guild_members').doc(id).set({
+        users.push({
+          id: id,
           password: password,
           grade: 1,
           joined: new Date().toISOString()
         });
-        
+        localStorage.setItem('daramjwi_users_fallback', JSON.stringify(users));
         return { success: true };
-      } catch (e) {
-        console.error(e);
-        return { success: false, message: '가입 중 오류가 발생했습니다.' };
       }
     }
 
     async function login(id, password) {
-      if (!db) return { success: false, message: '데이터베이스 연결 실패.' };
-      
-      try {
-        const doc = await db.collection('guild_members').doc(id).get();
-        if (!doc.exists) {
+      if (db) {
+        try {
+          const doc = await db.collection('guild_members').doc(id).get();
+          if (!doc.exists) {
+            return { success: false, message: '존재하지 않는 아이디입니다.' };
+          }
+          
+          const data = doc.data();
+          if (data.password !== password) {
+            return { success: false, message: '비밀번호가 틀렸습니다.' };
+          }
+          
+          setCurrentUser(id);
+          return { success: true, user: id };
+        } catch (e) {
+          console.error(e);
+          return { success: false, message: '로그인 중 오류가 발생했습니다.' };
+        }
+      } else {
+        // Fallback
+        const users = await loadUsers();
+        const user = users.find(u => u.id.toLowerCase() === id.toLowerCase());
+        if (!user) {
           return { success: false, message: '존재하지 않는 아이디입니다.' };
         }
-        
-        const data = doc.data();
-        if (data.password !== password) {
+        if (user.password !== password) {
           return { success: false, message: '비밀번호가 틀렸습니다.' };
         }
-        
         setCurrentUser(id);
         return { success: true, user: id };
-      } catch (e) {
-        console.error(e);
-        return { success: false, message: '로그인 중 오류가 발생했습니다.' };
       }
     }
 
     async function getCurrentUserGrade() {
       const id = getCurrentUser();
-      if (!id || !db) return 0;
-      try {
-        const doc = await db.collection('guild_members').doc(id).get();
-        if (!doc.exists) return 0;
-        return doc.data().grade || 1;
-      } catch (e) {
-        return 0;
+      if (!id) return 0;
+      if (db) {
+        try {
+          const doc = await db.collection('guild_members').doc(id).get();
+          if (!doc.exists) return 0;
+          return doc.data().grade || 1;
+        } catch (e) {
+          return 0;
+        }
+      } else {
+        const users = await loadUsers();
+        const user = users.find(u => u.id.toLowerCase() === id.toLowerCase());
+        return user ? (user.grade || 1) : 0;
       }
     }
 
@@ -403,16 +444,24 @@
         return { success: false, message: '등급 변경 권한이 없습니다.' };
       }
       
-      if (!db) return { success: false, message: 'DB 연결 실패' };
-      
-      try {
-        await db.collection('guild_members').doc(targetId).update({
-          grade: parseInt(newGrade)
-        });
+      if (db) {
+        try {
+          await db.collection('guild_members').doc(targetId).update({
+            grade: parseInt(newGrade)
+          });
+          return { success: true };
+        } catch (e) {
+          console.error(e);
+          return { success: false, message: '등급 변경 실패' };
+        }
+      } else {
+        // Fallback
+        const users = await loadUsers();
+        const target = users.find(u => u.id.toLowerCase() === targetId.toLowerCase());
+        if (!target) return { success: false, message: '대상 사용자를 찾을 수 없습니다.' };
+        target.grade = parseInt(newGrade);
+        localStorage.setItem('daramjwi_users_fallback', JSON.stringify(users));
         return { success: true };
-      } catch (e) {
-        console.error(e);
-        return { success: false, message: '등급 변경 실패' };
       }
     }
 
@@ -423,22 +472,30 @@
     }
 
     async function ensureMasterAccount() {
-      if (!db) return;
       const masterId = '신궁상폐';
       const masterPw = 'qlqjs6491!';
       
-      try {
-        const doc = await db.collection('guild_members').doc(masterId).get();
-        if (!doc.exists) {
-          await db.collection('guild_members').doc(masterId).set({
-            password: masterPw,
-            grade: 3,
-            joined: new Date().toISOString()
-          });
-          console.log("Master account created in Firestore");
+      if (db) {
+        try {
+          const doc = await db.collection('guild_members').doc(masterId).get();
+          if (!doc.exists) {
+            await db.collection('guild_members').doc(masterId).set({
+              password: masterPw,
+              grade: 3,
+              joined: new Date().toISOString()
+            });
+            console.log("Master account created in Firestore");
+          }
+        } catch (e) {
+          console.error("Failed to ensure master account", e);
         }
-      } catch (e) {
-        console.error("Failed to ensure master account", e);
+      } else {
+        // Fallback
+        const users = await loadUsers();
+        if (!users.some(u => u.id === masterId)) {
+          users.push({ id: masterId, password: masterPw, grade: 3, joined: new Date().toISOString() });
+          localStorage.setItem('daramjwi_users_fallback', JSON.stringify(users));
+        }
       }
     }
 
@@ -451,14 +508,20 @@
         navRight.innerHTML = `
           <div class="flex items-center gap-x-2 text-sm">
             <span class="hidden sm:inline px-3 py-1 bg-emerald-100 text-emerald-700 rounded-2xl font-semibold">${currentUser}</span>
-            <button onclick="logout()" class="px-4 py-1.5 text-sm font-semibold border rounded-2xl hover:bg-slate-50">로그아웃</button>
+            <button id="nav-logout-btn" class="px-4 py-1.5 text-sm font-semibold border rounded-2xl hover:bg-slate-50">로그아웃</button>
           </div>
         `;
+        const logoutBtn = document.getElementById('nav-logout-btn');
+        if (logoutBtn) logoutBtn.addEventListener('click', logout);
       } else {
         navRight.innerHTML = `
-          <button onclick="showLoginModal()" class="px-4 py-1.5 text-sm font-semibold border rounded-2xl hover:bg-slate-50">로그인</button>
-          <button onclick="showSignupModal()" class="px-4 py-1.5 bg-[#166534] text-white font-semibold rounded-2xl text-sm">회원가입</button>
+          <button id="nav-login-btn" class="px-4 py-1.5 text-sm font-semibold border rounded-2xl hover:bg-slate-50">로그인</button>
+          <button id="nav-signup-btn" class="px-4 py-1.5 bg-[#166534] text-white font-semibold rounded-2xl text-sm">회원가입</button>
         `;
+        const loginBtn = document.getElementById('nav-login-btn');
+        if (loginBtn) loginBtn.addEventListener('click', showLoginModal);
+        const signupBtn = document.getElementById('nav-signup-btn');
+        if (signupBtn) signupBtn.addEventListener('click', showSignupModal);
       }
     }
 
@@ -640,15 +703,74 @@
     async function renderAdminView() {
       const statsContainer = document.getElementById('admin-stats');
       const tableBody = document.getElementById('admin-user-table');
-      if (!statsContainer || !tableBody || !db) {
-        if (statsContainer) statsContainer.innerHTML = '<div class="text-red-500">Firebase가 설정되지 않았습니다. config를 확인하세요.</div>';
-        return;
-      }
+      if (!statsContainer || !tableBody) return;
 
       // Cleanup previous listener
       if (adminUnsubscribe) {
         adminUnsubscribe();
         adminUnsubscribe = null;
+      }
+
+      if (!db) {
+        // Fallback mode
+        const users = await loadUsers();
+        const currentId = getCurrentUser();
+        
+        const total = users.length;
+        const g1 = users.filter(u => u.grade === 1).length;
+        const g2 = users.filter(u => u.grade === 2).length;
+        const g3 = users.filter(u => u.grade === 3).length;
+        
+        statsContainer.innerHTML = `
+          <div class="bg-slate-50 border rounded-2xl p-3 text-center">
+            <div class="text-xs text-slate-500">총 가입자 (로컬 모드)</div>
+            <div class="text-2xl font-extrabold">${total}명</div>
+          </div>
+          <div class="bg-gray-100 border rounded-2xl p-3 text-center">
+            <div class="text-xs text-gray-600">신입</div>
+            <div class="text-2xl font-extrabold">${g1}명</div>
+          </div>
+          <div class="bg-blue-100 border rounded-2xl p-3 text-center">
+            <div class="text-xs text-blue-600">정회원</div>
+            <div class="text-2xl font-extrabold">${g2}명</div>
+          </div>
+          <div class="bg-purple-100 border rounded-2xl p-3 text-center">
+            <div class="text-xs text-purple-600">운영진</div>
+            <div class="text-2xl font-extrabold">${g3}명</div>
+          </div>
+        `;
+        
+        tableBody.innerHTML = '';
+        users.forEach(user => {
+          const tr = document.createElement('tr');
+          const joined = new Date(user.joined).toLocaleDateString('ko-KR');
+          
+          let gradeSelect = '';
+          if (user.id !== currentId || currentId === '신궁상폐') {
+            gradeSelect = `
+              <select onchange="changeAdminGrade('${user.id}', this.value)" class="text-xs border px-2 py-1 rounded bg-white">
+                <option value="1" ${user.grade===1?'selected':''}>신입</option>
+                <option value="2" ${user.grade===2?'selected':''}>정회원</option>
+                <option value="3" ${user.grade===3?'selected':''}>운영진</option>
+              </select>
+            `;
+          } else {
+            gradeSelect = `<span class="text-xs">${getGradeName(user.grade)}</span>`;
+          }
+          
+          tr.innerHTML = `
+            <td class="py-2 font-medium">${user.id}</td>
+            <td class="py-2">
+              <span class="text-xs px-2 py-0.5 rounded-full ${user.grade === 3 ? 'bg-purple-100 text-purple-700' : user.grade === 2 ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'}">
+                ${getGradeName(user.grade)}
+              </span>
+            </td>
+            <td class="py-2 text-xs text-slate-500">${joined}</td>
+            <td class="py-2">${gradeSelect}</td>
+          `;
+          tableBody.appendChild(tr);
+        });
+        return;
       }
 
       const membersCol = db.collection('guild_members');
@@ -719,6 +841,7 @@
         });
       }, error => {
         console.error("Admin snapshot error:", error);
+        if (statsContainer) statsContainer.innerHTML = '<div class="text-red-500">실시간 업데이트 오류. 페이지를 새로고침하세요.</div>';
       });
     }
 
@@ -735,17 +858,43 @@
 
     // ==================== MODALS ====================
     function showLoginModal() {
-      closeModals();
-      document.getElementById('login-modal').classList.remove('hidden');
-      document.getElementById('login-modal').classList.add('flex');
-      setTimeout(() => document.getElementById('login-id').focus(), 100);
+      console.log('showLoginModal called');
+      try {
+        closeModals();
+        const modal = document.getElementById('login-modal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          setTimeout(() => {
+            const input = document.getElementById('login-id');
+            if (input) input.focus();
+          }, 100);
+        } else {
+          console.error('login-modal not found');
+        }
+      } catch (err) {
+        console.error('Error in showLoginModal:', err);
+      }
     }
 
     function showSignupModal() {
-      closeModals();
-      document.getElementById('signup-modal').classList.remove('hidden');
-      document.getElementById('signup-modal').classList.add('flex');
-      setTimeout(() => document.getElementById('signup-id').focus(), 100);
+      console.log('showSignupModal called');
+      try {
+        closeModals();
+        const modal = document.getElementById('signup-modal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          setTimeout(() => {
+            const input = document.getElementById('signup-id');
+            if (input) input.focus();
+          }, 100);
+        } else {
+          console.error('signup-modal not found');
+        }
+      } catch (err) {
+        console.error('Error in showSignupModal:', err);
+      }
     }
 
     function closeModals() {
@@ -755,64 +904,98 @@
       });
     }
 
+    function attachFormListeners() {
+      const loginForm = document.getElementById('login-form');
+      if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+      }
+      const signupForm = document.getElementById('signup-form');
+      if (signupForm) {
+        signupForm.addEventListener('submit', handleSignup);
+      }
+    }
+
+    function attachButtonListeners() {
+      const staticLogin = document.getElementById('static-login-btn');
+      if (staticLogin) {
+        staticLogin.addEventListener('click', showLoginModal);
+      }
+      const staticSignup = document.getElementById('static-signup-btn');
+      if (staticSignup) {
+        staticSignup.addEventListener('click', showSignupModal);
+      }
+    }
+
     // ==================== FORM HANDLERS ====================
     async function handleLogin(e) {
       e.preventDefault();
+      console.log('handleLogin called');
       
-      const id = document.getElementById('login-id').value.trim();
-      const pw = document.getElementById('login-pw').value;
-      
-      const result = await login(id, pw);
-      
-      if (result.success) {
-        closeModals();
-        showToast(`${result.user}님 환영합니다!`);
-        updateNav();
-        await showMainContent(true);
-      } else {
-        showToast(result.message);
+      try {
+        const id = document.getElementById('login-id').value.trim();
+        const pw = document.getElementById('login-pw').value;
+        
+        const result = await login(id, pw);
+        
+        if (result.success) {
+          closeModals();
+          showToast(`${result.user}님 환영합니다!`);
+          updateNav();
+          await showMainContent(true);
+        } else {
+          showToast(result.message || '로그인 실패');
+        }
+      } catch (err) {
+        console.error('handleLogin error:', err);
+        showToast('로그인 중 오류가 발생했습니다. 콘솔을 확인하세요.');
       }
     }
 
     async function handleSignup(e) {
       e.preventDefault();
+      console.log('handleSignup called');
       
-      const id = document.getElementById('signup-id').value.trim();
-      const pw = document.getElementById('signup-pw').value;
-      const pw2 = document.getElementById('signup-pw2').value;
-      
-      if (pw !== pw2) {
-        showToast('비밀번호가 일치하지 않습니다.');
-        return;
-      }
-      
-      if (id.length < 2) {
-        showToast('아이디는 2자 이상이어야 합니다.');
-        return;
-      }
-      
-      const result = await signup(id, pw);
-      
-      if (result.success) {
-        closeModals();
-        showToast('회원가입이 완료되었습니다!');
-
-        // Refresh views for currently logged in user (especially master)
-        await renderMemberList();
-        const curr = getCurrentUser();
-        if (curr === '신궁상폐') {
-          // Snapshot will automatically update the open view (no need to switch)
-          await renderAdminView();
+      try {
+        const id = document.getElementById('signup-id').value.trim();
+        const pw = document.getElementById('signup-pw').value;
+        const pw2 = document.getElementById('signup-pw2').value;
+        
+        if (pw !== pw2) {
+          showToast('비밀번호가 일치하지 않습니다.');
+          return;
         }
-
-        // Only force login modal if no one is currently logged in
-        if (!curr) {
-          setTimeout(() => {
-            showLoginModal();
-          }, 600);
+        
+        if (id.length < 2) {
+          showToast('아이디는 2자 이상이어야 합니다.');
+          return;
         }
-      } else {
-        showToast(result.message);
+        
+        const result = await signup(id, pw);
+        
+        if (result.success) {
+          closeModals();
+          showToast('회원가입이 완료되었습니다!');
+
+          // Refresh views for currently logged in user (especially master)
+          await renderMemberList();
+          const curr = getCurrentUser();
+          if (curr === '신궁상폐') {
+            // Snapshot will automatically update the open view (no need to switch)
+            await renderAdminView();
+          }
+
+          // Only force login modal if no one is currently logged in
+          if (!curr) {
+            setTimeout(() => {
+              showLoginModal();
+            }, 600);
+          }
+        } else {
+          showToast(result.message || '가입 실패');
+        }
+      } catch (err) {
+        console.error('handleSignup error:', err);
+        showToast('가입 중 오류가 발생했습니다. 콘솔을 확인하세요.');
       }
     }
 
@@ -894,21 +1077,21 @@
     }
 
     // ==================== INIT ====================
-    function init() {
+    async function init() {
       initFirebase();   // Initialize shared database
 
       // Ensure master account exists in Firestore (runs once)
-      ensureMasterAccount();
+      await ensureMasterAccount();
       
-      // Check login status
-      const currentUser = getCurrentUser();
-      updateNav();
-      
-      if (currentUser) {
-        showMainContent(true);
-      } else {
-        showMainContent(false);
+      // TEMP: Skip login entirely for now - always go straight to main home as master
+      // (login/signup modals and code are kept intact for future use)
+      const currentUser = getCurrentUser() || '신궁상폐';
+      if (!getCurrentUser()) {
+        setCurrentUser(currentUser);
       }
+      
+      updateNav();
+      await showMainContent(true);  // always show main (no login screen)
       
       // Start server timers
       startServerTimers();
@@ -917,11 +1100,16 @@
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeModals();
       });
-      
-      console.log('%c[다람쥐구조대] 회원제 사이트가 로드되었습니다. 마스터: 신궁상폐 / qlqjs6491!', 'color:#166534');
+
+      attachFormListeners();
+      attachButtonListeners();
+
+      console.log('%c[다람쥐구조대] 로그인 스킵 모드 - 바로 메인으로 로드됨 (로그인 코드는 유지됨)', 'color:#166534');
     }
 
-    window.onload = init;
+    window.onload = () => {
+      init().catch(err => console.error('Init error:', err));
+    };
   </script>
 </body>
 </html>
