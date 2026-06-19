@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>다람쥐구조대 | 마비노기 모바일 길드</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Noto Sans KR', system-ui, sans-serif; }
+    .mobi-card { transition: all 0.2s ease; }
+    .mobi-card:hover { transform: translateY(-1px); }
+    .timer { font-variant-numeric: tabular-nums; font-weight: 800; }
+    .section-title { font-weight: 700; color: #374151; }
+  </style>
+</head>
+<body class="bg-[#f8f7f0] text-slate-800">
+  <!-- Navbar -->
+  <nav class="sticky top-0 z-50 bg-white border-b">
+    <div class="max-w-screen-xl mx-auto px-5">
+      <div class="flex h-14 items-center justify-between">
+        <!-- Logo -->
+        <div class="flex items-center gap-x-3">
+          <div class="w-9 h-9 bg-[#166534] rounded-2xl flex items-center justify-center text-white text-2xl">🐿️</div>
+          <div>
+            <div class="font-extrabold text-2xl tracking-tighter text-[#166534]">다람쥐구조대</div>
+            <div class="text-[10px] -mt-1 text-[#854d0e] font-bold">MABINOGI MOBILE GUILD</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-x-2" id="nav-right">
+          <!-- JS will populate login state here -->
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Not logged in state -->
+  <div id="not-logged-in" class="max-w-screen-xl mx-auto px-5 pt-12 pb-20">
+    <div class="max-w-xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-1 rounded-full text-sm font-semibold mb-4">
+        알리사 서버 • 길드원 전용
+      </div>
+      
+      <h1 class="text-5xl font-extrabold tracking-tighter text-[#166534]">다람쥐구조대</h1>
+      <p class="mt-4 text-xl text-slate-600">작은 손으로 큰 모험을 함께</p>
+
+      <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+        <button onclick="showLoginModal()" 
+                class="flex-1 sm:flex-none px-8 py-3 bg-white border border-[#166534] text-[#166534] font-bold rounded-3xl hover:bg-[#f8faf5]">
+          로그인
+        </button>
+        <button onclick="showSignupModal()" 
+                class="flex-1 sm:flex-none px-8 py-3 bg-[#166534] text-white font-bold rounded-3xl hover:bg-[#14532d]">
+          회원가입
+        </button>
+      </div>
+
+      <div class="mt-8 text-sm text-slate-500">
+        아이디 = 닉네임<br>
+        비밀번호는 본인이 직접 설정합니다
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content (shown only when logged in) -->
+  <div id="main-content" class="hidden max-w-screen-xl mx-auto px-5 pt-8 pb-16">
+    <!-- Welcome bar -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <div class="text-sm text-slate-500">환영합니다,</div>
+        <div id="welcome-user" class="text-2xl font-extrabold text-[#166534]"></div>
+      </div>
+      <div class="text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full font-semibold">알리사 서버</div>
+    </div>
+
+    <!-- Server Timers -->
+    <div class="mb-8">
+      <div class="section-title mb-3 px-1">서버 타이머 (알리사 서버)</div>
+      <div class="grid md:grid-cols-3 gap-4">
+        <!-- 소환의 결계 -->
+        <div class="mobi-card bg-white border rounded-3xl p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-2xl">🔮</span>
+            <div class="font-bold">소환의 결계</div>
+          </div>
+          <div class="text-xs text-slate-500 mb-1">다음 출현까지</div>
+          <div id="summon-timer" class="timer text-4xl font-extrabold text-[#166534]">04:12:33</div>
+          <div class="mt-2 text-xs text-emerald-600">매일 20:00 기준 갱신</div>
+        </div>
+
+        <!-- 어비스 구멍 -->
+        <div class="mobi-card bg-white border rounded-3xl p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-2xl">🕳️</span>
+            <div class="font-bold">어비스 구멍</div>
+          </div>
+          <div class="text-xs text-slate-500 mb-1">다음 오픈</div>
+          <div id="abyss-timer" class="timer text-4xl font-extrabold text-[#166534]">18:45:00</div>
+          <div class="mt-3 text-xs">
+            <div class="flex justify-between text-slate-600">
+              <span>오늘 20:00</span>
+              <span class="font-medium">일반 어비스</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 심층 구멍 -->
+        <div class="mobi-card bg-white border rounded-3xl p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-2xl">🌑</span>
+            <div class="font-bold">심층 구멍</div>
+          </div>
+          <div class="text-xs text-slate-500 mb-1">다음 리셋까지</div>
+          <div id="deep-timer" class="timer text-4xl font-extrabold text-[#166534]">15:22:11</div>
+          <div class="mt-2 text-xs text-slate-600">매주 월요일 초기화</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 길드원 목록 (only registered users) -->
+    <div class="mobi-card bg-white border rounded-3xl p-6 mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <div class="font-bold text-lg">현재 가입된 길드원</div>
+        <div class="text-xs text-slate-500" id="member-count"></div>
+      </div>
+      <div id="member-list" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <!-- Populated by JS from registered users -->
+      </div>
+      <div class="text-xs text-center mt-4 text-slate-400">회원가입한 길드원만 표시됩니다</div>
+    </div>
+
+    <!-- Simple Guild Info -->
+    <div class="bg-white border rounded-3xl p-6 text-sm">
+      <div class="font-bold mb-2">다람쥐구조대</div>
+      <div class="text-slate-600">
+        알리사 서버에서 활동하는 따뜻한 길드입니다.<br>
+        초보자부터 고인물까지 서로 도와가며 모험합니다.
+      </div>
+      <div class="mt-3 text-xs">
+        길드장: 신궁상폐<br>
+        가입 문의는 로그인 후 길드 채팅에서 해주세요.
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div id="login-modal" onclick="if (event.target.id==='login-modal') closeModals()" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-5">
+    <div onclick="event.stopImmediatePropagation()" class="bg-white rounded-3xl w-full max-w-sm p-7">
+      <div class="font-extrabold text-2xl mb-1">로그인</div>
+      <div class="text-sm text-slate-500 mb-5">아이디(닉네임)와 비밀번호를 입력하세요</div>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-semibold text-slate-500">아이디 (닉네임)</label>
+            <input id="login-id" type="text" required class="mt-1 w-full border px-4 py-3 rounded-2xl text-sm" placeholder="예: 도토리대장">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-500">비밀번호</label>
+            <input id="login-pw" type="password" required class="mt-1 w-full border px-4 py-3 rounded-2xl text-sm" placeholder="비밀번호">
+          </div>
+        </div>
+        <button type="submit" class="mt-5 w-full bg-[#166534] text-white font-bold py-3 rounded-3xl">로그인</button>
+      </form>
+
+      <div class="text-center mt-4 text-sm">
+        계정이 없으신가요? <button onclick="closeModals(); showSignupModal()" class="text-[#166534] font-semibold">회원가입</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signup Modal -->
+  <div id="signup-modal" onclick="if (event.target.id==='signup-modal') closeModals()" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-5">
+    <div onclick="event.stopImmediatePropagation()" class="bg-white rounded-3xl w-full max-w-sm p-7">
+      <div class="font-extrabold text-2xl mb-1">회원가입</div>
+      <div class="text-sm text-slate-500 mb-5">아이디는 닉네임으로 사용됩니다</div>
+
+      <form id="signup-form" onsubmit="handleSignup(event)">
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-semibold text-slate-500">아이디 (닉네임)</label>
+            <input id="signup-id" type="text" required minlength="2" maxlength="12" 
+                   class="mt-1 w-full border px-4 py-3 rounded-2xl text-sm" placeholder="사용할 닉네임 (아이디)">
+            <div class="text-[10px] text-slate-400 mt-1">2~12자, 특수문자 제외 권장</div>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-500">비밀번호</label>
+            <input id="signup-pw" type="password" required minlength="4" 
+                   class="mt-1 w-full border px-4 py-3 rounded-2xl text-sm" placeholder="비밀번호 설정">
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-500">비밀번호 확인</label>
+            <input id="signup-pw2" type="password" required minlength="4" 
+                   class="mt-1 w-full border px-4 py-3 rounded-2xl text-sm" placeholder="비밀번호 다시 입력">
+          </div>
+        </div>
+
+        <button type="submit" class="mt-5 w-full bg-[#166534] text-white font-bold py-3 rounded-3xl">가입하기</button>
+      </form>
+
+      <div class="text-center mt-4 text-sm">
+        이미 계정이 있으신가요? <button onclick="closeModals(); showLoginModal()" class="text-[#166534] font-semibold">로그인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-[#166534] text-white px-6 py-3 rounded-3xl text-sm flex items-center gap-2 shadow-xl">
+    <span id="toast-text"></span>
+  </div>
+
+  <script>
+    // ==================== AUTH SYSTEM ====================
+    const USERS_KEY = 'daramjwi_users';
+    const CURRENT_USER_KEY = 'daramjwi_current_user';
+
+    function loadUsers() {
+      const raw = localStorage.getItem(USERS_KEY);
+      let users = raw ? JSON.parse(raw) : [];
+      
+      // Create MASTER account if it doesn't exist
+      const masterId = '신궁상폐';
+      const masterPw = 'qlqjs6491!';
+      const hasMaster = users.some(u => u.id === masterId);
+      
+      if (!hasMaster) {
+        users.push({ id: masterId, password: masterPw, joined: new Date().toISOString() });
+        saveUsers(users);
+      }
+      return users;
+    }
+
+    function saveUsers(users) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+
+    function getCurrentUser() {
+      return localStorage.getItem(CURRENT_USER_KEY);
+    }
+
+    function setCurrentUser(id) {
+      localStorage.setItem(CURRENT_USER_KEY, id);
+    }
+
+    function clearCurrentUser() {
+      localStorage.removeItem(CURRENT_USER_KEY);
+    }
+
+    function signup(id, password) {
+      const users = loadUsers();
+      
+      if (users.some(u => u.id.toLowerCase() === id.toLowerCase())) {
+        return { success: false, message: '이미 사용 중인 아이디입니다.' };
+      }
+      
+      users.push({
+        id: id,
+        password: password,
+        joined: new Date().toISOString()
+      });
+      
+      saveUsers(users);
+      return { success: true };
+    }
+
+    function login(id, password) {
+      const users = loadUsers();
+      const user = users.find(u => u.id.toLowerCase() === id.toLowerCase());
+      
+      if (!user) {
+        return { success: false, message: '존재하지 않는 아이디입니다.' };
+      }
+      
+      if (user.password !== password) {
+        return { success: false, message: '비밀번호가 틀렸습니다.' };
+      }
+      
+      setCurrentUser(user.id);
+      return { success: true, user: user.id };
+    }
+
+    // ==================== UI STATE ====================
+    function updateNav() {
+      const navRight = document.getElementById('nav-right');
+      const currentUser = getCurrentUser();
+      
+      if (currentUser) {
+        navRight.innerHTML = `
+          <div class="flex items-center gap-x-2 text-sm">
+            <span class="hidden sm:inline px-3 py-1 bg-emerald-100 text-emerald-700 rounded-2xl font-semibold">${currentUser}</span>
+            <button onclick="logout()" class="px-4 py-1.5 text-sm font-semibold border rounded-2xl hover:bg-slate-50">로그아웃</button>
+          </div>
+        `;
+      } else {
+        navRight.innerHTML = `
+          <button onclick="showLoginModal()" class="px-4 py-1.5 text-sm font-semibold border rounded-2xl hover:bg-slate-50">로그인</button>
+          <button onclick="showSignupModal()" class="px-4 py-1.5 bg-[#166534] text-white font-semibold rounded-2xl text-sm">회원가입</button>
+        `;
+      }
+    }
+
+    function showMainContent(show) {
+      const notLogged = document.getElementById('not-logged-in');
+      const main = document.getElementById('main-content');
+      
+      if (show) {
+        notLogged.classList.add('hidden');
+        main.classList.remove('hidden');
+        document.getElementById('welcome-user').textContent = getCurrentUser();
+        renderMemberList();
+      } else {
+        notLogged.classList.remove('hidden');
+        main.classList.add('hidden');
+      }
+    }
+
+    function renderMemberList() {
+      const container = document.getElementById('member-list');
+      const countEl = document.getElementById('member-count');
+      const users = loadUsers();
+      
+      container.innerHTML = '';
+      countEl.textContent = `${users.length}명 가입`;
+      
+      if (users.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-400 py-3">아직 가입한 길드원이 없습니다.</div>`;
+        return;
+      }
+      
+      users.forEach(user => {
+        const div = document.createElement('div');
+        div.className = `flex items-center gap-3 px-4 py-2.5 bg-slate-50 rounded-2xl border`;
+        div.innerHTML = `
+          <div class="w-8 h-8 bg-[#166534] rounded-xl flex items-center justify-center text-white text-sm">🐿️</div>
+          <div class="font-medium">${user.id}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // ==================== MODALS ====================
+    function showLoginModal() {
+      closeModals();
+      document.getElementById('login-modal').classList.remove('hidden');
+      document.getElementById('login-modal').classList.add('flex');
+      setTimeout(() => document.getElementById('login-id').focus(), 100);
+    }
+
+    function showSignupModal() {
+      closeModals();
+      document.getElementById('signup-modal').classList.remove('hidden');
+      document.getElementById('signup-modal').classList.add('flex');
+      setTimeout(() => document.getElementById('signup-id').focus(), 100);
+    }
+
+    function closeModals() {
+      document.querySelectorAll('[id$="-modal"]').forEach(modal => {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      });
+    }
+
+    // ==================== FORM HANDLERS ====================
+    function handleLogin(e) {
+      e.preventDefault();
+      
+      const id = document.getElementById('login-id').value.trim();
+      const pw = document.getElementById('login-pw').value;
+      
+      const result = login(id, pw);
+      
+      if (result.success) {
+        closeModals();
+        showToast(`${result.user}님 환영합니다!`);
+        updateNav();
+        showMainContent(true);
+      } else {
+        showToast(result.message);
+      }
+    }
+
+    function handleSignup(e) {
+      e.preventDefault();
+      
+      const id = document.getElementById('signup-id').value.trim();
+      const pw = document.getElementById('signup-pw').value;
+      const pw2 = document.getElementById('signup-pw2').value;
+      
+      if (pw !== pw2) {
+        showToast('비밀번호가 일치하지 않습니다.');
+        return;
+      }
+      
+      if (id.length < 2) {
+        showToast('아이디는 2자 이상이어야 합니다.');
+        return;
+      }
+      
+      const result = signup(id, pw);
+      
+      if (result.success) {
+        closeModals();
+        showToast('회원가입이 완료되었습니다! 로그인해주세요.');
+        // Auto open login
+        setTimeout(() => {
+          showLoginModal();
+        }, 600);
+      } else {
+        showToast(result.message);
+      }
+    }
+
+    function logout() {
+      clearCurrentUser();
+      updateNav();
+      showMainContent(false);
+      showToast('로그아웃 되었습니다.');
+    }
+
+    // ==================== TIMERS ====================
+    let intervals = [];
+
+    function startServerTimers() {
+      // Clear previous
+      intervals.forEach(clearInterval);
+      intervals = [];
+
+      // 소환의 결계
+      let h1 = 4, m1 = 12, s1 = 33;
+      const summonEl = document.getElementById('summon-timer');
+      
+      intervals.push(setInterval(() => {
+        s1--;
+        if (s1 < 0) { s1 = 59; m1--; }
+        if (m1 < 0) { m1 = 59; h1--; }
+        if (h1 < 0) { h1 = 4; m1 = 12; s1 = 33; } // reset cycle
+        
+        if (summonEl) summonEl.textContent = `${String(h1).padStart(2,'0')}:${String(m1).padStart(2,'0')}:${String(s1).padStart(2,'0')}`;
+      }, 1000));
+
+      // 어비스 구멍 (next open simulation)
+      let h2 = 18, m2 = 45, s2 = 0;
+      const abyssEl = document.getElementById('abyss-timer');
+      
+      intervals.push(setInterval(() => {
+        s2--;
+        if (s2 < 0) { s2 = 59; m2--; }
+        if (m2 < 0) { m2 = 59; h2--; }
+        if (h2 < 0) { h2 = 23; m2 = 59; s2 = 59; }
+        
+        if (abyssEl) abyssEl.textContent = `${String(h2).padStart(2,'0')}:${String(m2).padStart(2,'0')}:${String(s2).padStart(2,'0')}`;
+      }, 1000));
+
+      // 심층 구멍
+      let h3 = 15, m3 = 22, s3 = 11;
+      const deepEl = document.getElementById('deep-timer');
+      
+      intervals.push(setInterval(() => {
+        s3--;
+        if (s3 < 0) { s3 = 59; m3--; }
+        if (m3 < 0) { m3 = 59; h3--; }
+        if (h3 < 0) { h3 = 23; m3 = 59; s3 = 59; }
+        
+        if (deepEl) deepEl.textContent = `${String(h3).padStart(2,'0')}:${String(m3).padStart(2,'0')}:${String(s3).padStart(2,'0')}`;
+      }, 1000));
+    }
+
+    // ==================== TOAST ====================
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-text');
+      text.textContent = msg;
+      toast.style.display = 'flex';
+      
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 2800);
+    }
+
+    // ==================== INIT ====================
+    function init() {
+      // Load master account
+      loadUsers();
+      
+      // Check login status
+      const currentUser = getCurrentUser();
+      updateNav();
+      
+      if (currentUser) {
+        showMainContent(true);
+      } else {
+        showMainContent(false);
+      }
+      
+      // Start server timers
+      startServerTimers();
+      
+      // Keyboard escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModals();
+      });
+      
+      console.log('%c[다람쥐구조대] 회원제 사이트가 로드되었습니다. 마스터: 신궁상폐 / qlqjs6491!', 'color:#166534');
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
