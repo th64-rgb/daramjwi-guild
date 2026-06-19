@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>다람쥐구조대 | 마비노기 모바일 길드</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase (for shared member data across visitors) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: 'Noto Sans KR', system-ui, sans-serif; }
     .mobi-card { transition: all 0.2s ease; }
@@ -73,72 +76,134 @@
       <div class="text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full font-semibold">알리사 서버</div>
     </div>
 
-    <!-- Server Timers -->
-    <div class="mb-8">
-      <div class="section-title mb-3 px-1">서버 타이머 (알리사 서버)</div>
-      <div class="grid md:grid-cols-3 gap-4">
-        <!-- 소환의 결계 -->
-        <div class="mobi-card bg-white border rounded-3xl p-5">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-2xl">🔮</span>
-            <div class="font-bold">소환의 결계</div>
-          </div>
-          <div class="text-xs text-slate-500 mb-1">다음 출현까지</div>
-          <div id="summon-timer" class="timer text-4xl font-extrabold text-[#166534]">04:12:33</div>
-          <div class="mt-2 text-xs text-emerald-600">매일 20:00 기준 갱신</div>
-        </div>
+    <!-- Master Tabs (only for 신궁상폐) -->
+    <div id="master-tabs" class="hidden mb-4">
+      <div class="flex gap-2 border-b pb-1">
+        <button onclick="switchTab('main')" id="tab-main"
+                class="px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-[#166534] text-[#166534]">
+          길드 정보
+        </button>
+        <button onclick="switchTab('admin')" id="tab-admin"
+                class="px-4 py-2 text-sm font-semibold rounded-t-lg hover:bg-slate-100">
+          가입자 현황
+        </button>
+      </div>
+    </div>
 
-        <!-- 어비스 구멍 -->
-        <div class="mobi-card bg-white border rounded-3xl p-5">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-2xl">🕳️</span>
-            <div class="font-bold">어비스 구멍</div>
+    <!-- Main View (timers + public member list) -->
+    <div id="main-view">
+      <!-- Server Timers -->
+      <div class="mb-8">
+        <div class="section-title mb-3 px-1">서버 타이머 (알리사 서버)</div>
+        <div class="grid md:grid-cols-3 gap-4">
+          <!-- 소환의 결계 -->
+          <div class="mobi-card bg-white border rounded-3xl p-5">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-2xl">🔮</span>
+              <div class="font-bold">소환의 결계</div>
+            </div>
+            <div class="text-xs text-slate-500 mb-1">다음 출현까지</div>
+            <div id="summon-timer" class="timer text-4xl font-extrabold text-[#166534]">04:12:33</div>
+            <div class="mt-2 text-xs text-emerald-600">매일 20:00 기준 갱신</div>
           </div>
-          <div class="text-xs text-slate-500 mb-1">다음 오픈</div>
-          <div id="abyss-timer" class="timer text-4xl font-extrabold text-[#166534]">18:45:00</div>
-          <div class="mt-3 text-xs">
-            <div class="flex justify-between text-slate-600">
-              <span>오늘 20:00</span>
-              <span class="font-medium">일반 어비스</span>
+
+          <!-- 어비스 구멍 -->
+          <div class="mobi-card bg-white border rounded-3xl p-5">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-2xl">🕳️</span>
+              <div class="font-bold">어비스 구멍</div>
+            </div>
+            <div class="text-xs text-slate-500 mb-1">다음 오픈</div>
+            <div id="abyss-timer" class="timer text-4xl font-extrabold text-[#166534]">18:45:00</div>
+            <div class="mt-3 text-xs">
+              <div class="flex justify-between text-slate-600">
+                <span>오늘 20:00</span>
+                <span class="font-medium">일반 어비스</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- 심층 구멍 -->
-        <div class="mobi-card bg-white border rounded-3xl p-5">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-2xl">🌑</span>
-            <div class="font-bold">심층 구멍</div>
+          <!-- 심층 구멍 -->
+          <div class="mobi-card bg-white border rounded-3xl p-5">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-2xl">🌑</span>
+              <div class="font-bold">심층 구멍</div>
+            </div>
+            <div class="text-xs text-slate-500 mb-1">다음 리셋까지</div>
+            <div id="deep-timer" class="timer text-4xl font-extrabold text-[#166534]">15:22:11</div>
+            <div class="mt-2 text-xs text-slate-600">매주 월요일 초기화</div>
           </div>
-          <div class="text-xs text-slate-500 mb-1">다음 리셋까지</div>
-          <div id="deep-timer" class="timer text-4xl font-extrabold text-[#166534]">15:22:11</div>
-          <div class="mt-2 text-xs text-slate-600">매주 월요일 초기화</div>
+        </div>
+      </div>
+
+      <!-- 길드원 목록 (grade aware) -->
+      <div class="mobi-card bg-white border rounded-3xl p-6 mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <div class="font-bold text-lg">현재 가입된 길드원</div>
+          <div class="text-xs text-slate-500" id="member-count"></div>
+        </div>
+        <div id="member-list" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <!-- Populated by JS -->
+        </div>
+        <div class="text-xs text-center mt-4 text-slate-400">
+          <span id="member-list-note">회원가입한 길드원만 표시됩니다</span>
+        </div>
+      </div>
+
+      <!-- Simple Guild Info -->
+      <div class="bg-white border rounded-3xl p-6 text-sm">
+        <div class="font-bold mb-2">다람쥐구조대</div>
+        <div class="text-slate-600">
+          알리사 서버에서 활동하는 따뜻한 길드입니다.<br>
+          초보자부터 고인물까지 서로 도와가며 모험합니다.
+        </div>
+        <div class="mt-3 text-xs">
+          길드장: 신궁상폐<br>
+          가입 문의는 로그인 후 길드 채팅에서 해주세요.
         </div>
       </div>
     </div>
 
-    <!-- 길드원 목록 (only registered users) -->
-    <div class="mobi-card bg-white border rounded-3xl p-6 mb-8">
-      <div class="flex items-center justify-between mb-4">
-        <div class="font-bold text-lg">현재 가입된 길드원</div>
-        <div class="text-xs text-slate-500" id="member-count"></div>
-      </div>
-      <div id="member-list" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-        <!-- Populated by JS from registered users -->
-      </div>
-      <div class="text-xs text-center mt-4 text-slate-400">회원가입한 길드원만 표시됩니다</div>
-    </div>
+    <!-- Admin View (마스터 전용 가입자 현황) -->
+    <div id="admin-view" class="hidden">
+      <div class="mobi-card bg-white border rounded-3xl p-6 mb-8">
+        <div class="font-bold text-lg mb-4 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            📊 가입자 현황
+            <span class="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-semibold">마스터 전용</span>
+            <button onclick="renderAdminView()" class="text-xs px-2 py-0.5 border rounded hover:bg-slate-100">🔄 새로고침</button>
+          </div>
+          <button onclick="showSignupModal()" 
+                  class="text-xs px-3 py-1 bg-[#166534] text-white rounded-2xl hover:bg-[#14532d]">
+            + 새 회원 가입
+          </button>
+        </div>
 
-    <!-- Simple Guild Info -->
-    <div class="bg-white border rounded-3xl p-6 text-sm">
-      <div class="font-bold mb-2">다람쥐구조대</div>
-      <div class="text-slate-600">
-        알리사 서버에서 활동하는 따뜻한 길드입니다.<br>
-        초보자부터 고인물까지 서로 도와가며 모험합니다.
-      </div>
-      <div class="mt-3 text-xs">
-        길드장: 신궁상폐<br>
-        가입 문의는 로그인 후 길드 채팅에서 해주세요.
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6" id="admin-stats">
+          <!-- JS populated -->
+        </div>
+
+        <!-- Full user table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b text-left text-slate-500">
+                <th class="py-2">닉네임</th>
+                <th class="py-2">등급</th>
+                <th class="py-2">가입일</th>
+                <th class="py-2">관리</th>
+              </tr>
+            </thead>
+            <tbody id="admin-user-table" class="divide-y">
+              <!-- JS populated rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-4 text-xs text-slate-500">
+          최고등급(운영진)은 이곳에서 모든 가입자의 등급을 확인하고 변경할 수 있습니다.
+        </div>
       </div>
     </div>
   </div>
@@ -210,29 +275,38 @@
   </div>
 
   <script>
-    // ==================== AUTH SYSTEM ====================
-    const USERS_KEY = 'daramjwi_users';
-    const CURRENT_USER_KEY = 'daramjwi_current_user';
+    // ==================== FIREBASE CONFIG (YOU MUST REPLACE THIS) ====================
+    // 1. Go to https://console.firebase.google.com
+    // 2. Create a new project
+    // 3. Enable Firestore Database (start in test mode)
+    // 4. Project Settings → General → Your apps → Add Web app
+    // 5. Copy the config object below and replace this one
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
 
-    function loadUsers() {
-      const raw = localStorage.getItem(USERS_KEY);
-      let users = raw ? JSON.parse(raw) : [];
-      
-      // Create MASTER account if it doesn't exist
-      const masterId = '신궁상폐';
-      const masterPw = 'qlqjs6491!';
-      const hasMaster = users.some(u => u.id === masterId);
-      
-      if (!hasMaster) {
-        users.push({ id: masterId, password: masterPw, joined: new Date().toISOString() });
-        saveUsers(users);
+    let db;
+    let adminUnsubscribe = null;
+    let memberListUnsubscribe = null;
+
+    function initFirebase() {
+      try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        console.log("Firebase initialized");
+      } catch (e) {
+        console.error("Firebase init failed. Make sure you replaced the config.", e);
+        // Fallback will not work for shared data
       }
-      return users;
     }
 
-    function saveUsers(users) {
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    }
+    // ==================== AUTH SYSTEM (using Firestore for shared multi-user data) ====================
+    const CURRENT_USER_KEY = 'daramjwi_current_user';
 
     function getCurrentUser() {
       return localStorage.getItem(CURRENT_USER_KEY);
@@ -246,37 +320,126 @@
       localStorage.removeItem(CURRENT_USER_KEY);
     }
 
-    function signup(id, password) {
-      const users = loadUsers();
-      
-      if (users.some(u => u.id.toLowerCase() === id.toLowerCase())) {
-        return { success: false, message: '이미 사용 중인 아이디입니다.' };
+    async function loadUsers() {
+      if (!db) {
+        console.warn("Firebase not ready, returning empty");
+        return [];
       }
-      
-      users.push({
-        id: id,
-        password: password,
-        joined: new Date().toISOString()
-      });
-      
-      saveUsers(users);
-      return { success: true };
+      try {
+        const snapshot = await db.collection('guild_members').get();
+        const users = [];
+        snapshot.forEach(doc => {
+          users.push({ id: doc.id, ...doc.data() });
+        });
+        return users;
+      } catch (e) {
+        console.error("Failed to load users from Firestore", e);
+        return [];
+      }
     }
 
-    function login(id, password) {
-      const users = loadUsers();
-      const user = users.find(u => u.id.toLowerCase() === id.toLowerCase());
+    async function signup(id, password) {
+      if (!db) return { success: false, message: '데이터베이스 연결 실패. Firebase 설정을 확인하세요.' };
       
-      if (!user) {
-        return { success: false, message: '존재하지 않는 아이디입니다.' };
+      const idLower = id.toLowerCase();
+      try {
+        const existing = await db.collection('guild_members').doc(id).get();
+        if (existing.exists) {
+          return { success: false, message: '이미 사용 중인 아이디입니다.' };
+        }
+        
+        await db.collection('guild_members').doc(id).set({
+          password: password,
+          grade: 1,
+          joined: new Date().toISOString()
+        });
+        
+        return { success: true };
+      } catch (e) {
+        console.error(e);
+        return { success: false, message: '가입 중 오류가 발생했습니다.' };
+      }
+    }
+
+    async function login(id, password) {
+      if (!db) return { success: false, message: '데이터베이스 연결 실패.' };
+      
+      try {
+        const doc = await db.collection('guild_members').doc(id).get();
+        if (!doc.exists) {
+          return { success: false, message: '존재하지 않는 아이디입니다.' };
+        }
+        
+        const data = doc.data();
+        if (data.password !== password) {
+          return { success: false, message: '비밀번호가 틀렸습니다.' };
+        }
+        
+        setCurrentUser(id);
+        return { success: true, user: id };
+      } catch (e) {
+        console.error(e);
+        return { success: false, message: '로그인 중 오류가 발생했습니다.' };
+      }
+    }
+
+    async function getCurrentUserGrade() {
+      const id = getCurrentUser();
+      if (!id || !db) return 0;
+      try {
+        const doc = await db.collection('guild_members').doc(id).get();
+        if (!doc.exists) return 0;
+        return doc.data().grade || 1;
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    async function updateUserGrade(targetId, newGrade) {
+      const currentId = getCurrentUser();
+      const currentGrade = await getCurrentUserGrade();
+      
+      if (currentGrade < 3) {
+        return { success: false, message: '등급 변경 권한이 없습니다.' };
       }
       
-      if (user.password !== password) {
-        return { success: false, message: '비밀번호가 틀렸습니다.' };
-      }
+      if (!db) return { success: false, message: 'DB 연결 실패' };
       
-      setCurrentUser(user.id);
-      return { success: true, user: user.id };
+      try {
+        await db.collection('guild_members').doc(targetId).update({
+          grade: parseInt(newGrade)
+        });
+        return { success: true };
+      } catch (e) {
+        console.error(e);
+        return { success: false, message: '등급 변경 실패' };
+      }
+    }
+
+    function getGradeName(grade) {
+      if (grade === 3) return '운영진';
+      if (grade === 2) return '정회원';
+      return '신입';
+    }
+
+    async function ensureMasterAccount() {
+      if (!db) return;
+      const masterId = '신궁상폐';
+      const masterPw = 'qlqjs6491!';
+      
+      try {
+        const doc = await db.collection('guild_members').doc(masterId).get();
+        if (!doc.exists) {
+          await db.collection('guild_members').doc(masterId).set({
+            password: masterPw,
+            grade: 3,
+            joined: new Date().toISOString()
+          });
+          console.log("Master account created in Firestore");
+        }
+      } catch (e) {
+        console.error("Failed to ensure master account", e);
+      }
     }
 
     // ==================== UI STATE ====================
@@ -299,7 +462,7 @@
       }
     }
 
-    function showMainContent(show) {
+    async function showMainContent(show) {
       const notLogged = document.getElementById('not-logged-in');
       const main = document.getElementById('main-content');
       
@@ -307,35 +470,267 @@
         notLogged.classList.add('hidden');
         main.classList.remove('hidden');
         document.getElementById('welcome-user').textContent = getCurrentUser();
-        renderMemberList();
+        
+        const currentId = getCurrentUser();
+        const isMaster = currentId === '신궁상폐';
+        
+        // Show/hide master tabs
+        const tabs = document.getElementById('master-tabs');
+        if (tabs) tabs.classList.toggle('hidden', !isMaster);
+        
+        const adminView = document.getElementById('admin-view');
+        const mainView = document.getElementById('main-view');
+        
+        if (isMaster) {
+          await switchTab('main');  // shows tabs effect + renders list
+        } else {
+          if (mainView) mainView.classList.remove('hidden');
+          if (adminView) adminView.classList.add('hidden');
+          await renderMemberList();
+        }
       } else {
         notLogged.classList.remove('hidden');
         main.classList.add('hidden');
       }
     }
 
-    function renderMemberList() {
-      const container = document.getElementById('member-list');
-      const countEl = document.getElementById('member-count');
-      const users = loadUsers();
+    let currentTab = 'main';
+
+    async function switchTab(tab) {
+      currentTab = tab;
       
-      container.innerHTML = '';
-      countEl.textContent = `${users.length}명 가입`;
+      const mainView = document.getElementById('main-view');
+      const adminView = document.getElementById('admin-view');
+      const tabMain = document.getElementById('tab-main');
+      const tabAdmin = document.getElementById('tab-admin');
       
-      if (users.length === 0) {
-        container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-400 py-3">아직 가입한 길드원이 없습니다.</div>`;
-        return;
+      if (!mainView || !adminView) return;
+      
+      // Cleanup listeners when leaving tabs
+      if (tab !== 'admin' && adminUnsubscribe) {
+        adminUnsubscribe();
+        adminUnsubscribe = null;
+      }
+      if (tab !== 'main' && memberListUnsubscribe) {
+        memberListUnsubscribe();
+        memberListUnsubscribe = null;
       }
       
-      users.forEach(user => {
-        const div = document.createElement('div');
-        div.className = `flex items-center gap-3 px-4 py-2.5 bg-slate-50 rounded-2xl border`;
-        div.innerHTML = `
-          <div class="w-8 h-8 bg-[#166534] rounded-xl flex items-center justify-center text-white text-sm">🐿️</div>
-          <div class="font-medium">${user.id}</div>
-        `;
-        container.appendChild(div);
+      if (tab === 'main') {
+        mainView.classList.remove('hidden');
+        adminView.classList.add('hidden');
+        if (tabMain) tabMain.classList.add('border-b-2', 'border-[#166534]', 'text-[#166534]');
+        if (tabAdmin) tabAdmin.classList.remove('border-b-2', 'border-[#166534]', 'text-[#166534]');
+        await renderMemberList();
+      } else {
+        mainView.classList.add('hidden');
+        adminView.classList.remove('hidden');
+        if (tabMain) tabMain.classList.remove('border-b-2', 'border-[#166534]', 'text-[#166534]');
+        if (tabAdmin) tabAdmin.classList.add('border-b-2', 'border-[#166534]', 'text-[#166534]');
+        await renderAdminView();
+      }
+    }
+
+    async function renderMemberList() {
+      const container = document.getElementById('member-list');
+      const countEl = document.getElementById('member-count');
+      const noteEl = document.getElementById('member-list-note');
+      const currentGrade = await getCurrentUserGrade();
+      const currentId = getCurrentUser();
+      const canSeeGrades = currentGrade >= 3;
+
+      // Cleanup previous listener
+      if (memberListUnsubscribe) {
+        memberListUnsubscribe();
+        memberListUnsubscribe = null;
+      }
+
+      if (!db) {
+        // fallback if no db
+        const users = await loadUsers();
+        // render static version (simplified)
+        container.innerHTML = '';
+        countEl.textContent = `${users.length}명 가입`;
+        users.forEach(user => {
+          const div = document.createElement('div');
+          div.className = `flex items-center gap-3 px-4 py-2.5 bg-slate-50 rounded-2xl border`;
+          div.innerHTML = `<div class="flex items-center gap-3"><div class="w-8 h-8 bg-[#166534] rounded-xl flex items-center justify-center text-white text-sm">🐿️</div><div class="font-medium">${user.id}</div></div>`;
+          container.appendChild(div);
+        });
+        return;
+      }
+
+      const membersCol = db.collection('guild_members');
+
+      memberListUnsubscribe = membersCol.onSnapshot(snapshot => {
+        const users = [];
+        snapshot.forEach(doc => {
+          users.push({ id: doc.id, ...doc.data() });
+        });
+
+        container.innerHTML = '';
+        countEl.textContent = `${users.length}명 가입`;
+        
+        if (noteEl) {
+          noteEl.textContent = canSeeGrades 
+            ? '운영진은 등급을 확인하고 변경할 수 있습니다.' 
+            : '회원가입한 길드원만 표시됩니다 (등급은 비공개)';
+        }
+
+        if (users.length === 0) {
+          container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-400 py-3">아직 가입한 길드원이 없습니다.</div>`;
+          return;
+        }
+        
+        users.forEach(user => {
+          const div = document.createElement('div');
+          div.className = `flex items-center justify-between gap-2 px-4 py-2.5 bg-slate-50 rounded-2xl border`;
+          
+          let gradeHtml = '';
+          if (canSeeGrades) {
+            gradeHtml = `
+              <span class="text-xs px-2 py-0.5 rounded-full ${user.grade === 3 ? 'bg-purple-100 text-purple-700' : user.grade === 2 ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'}">
+                ${getGradeName(user.grade)}
+              </span>
+            `;
+          }
+          
+          let actionHtml = '';
+          if (canSeeGrades && user.id !== currentId) {
+            actionHtml = `
+              <select onchange="changeGradeFromList('${user.id}', this.value)" 
+                      class="text-xs border rounded px-1 py-0.5 bg-white">
+                <option value="1" ${user.grade === 1 ? 'selected' : ''}>신입</option>
+                <option value="2" ${user.grade === 2 ? 'selected' : ''}>정회원</option>
+                <option value="3" ${user.grade === 3 ? 'selected' : ''}>운영진</option>
+              </select>
+            `;
+          }
+          
+          div.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 bg-[#166534] rounded-xl flex items-center justify-center text-white text-sm">🐿️</div>
+              <div class="font-medium">${user.id}</div>
+              ${gradeHtml}
+            </div>
+            ${actionHtml}
+          `;
+          container.appendChild(div);
+        });
+      }, error => {
+        console.error("Member list snapshot error:", error);
       });
+    }
+
+    async function changeGradeFromList(targetId, newGrade) {
+      const result = await updateUserGrade(targetId, newGrade);
+      if (result.success) {
+        showToast('등급이 변경되었습니다.');
+        await renderMemberList();
+        // Also refresh admin view if open
+        const adminView = document.getElementById('admin-view');
+        if (adminView && !adminView.classList.contains('hidden')) {
+          await renderAdminView();
+        }
+      } else {
+        showToast(result.message);
+      }
+    }
+
+    async function renderAdminView() {
+      const statsContainer = document.getElementById('admin-stats');
+      const tableBody = document.getElementById('admin-user-table');
+      if (!statsContainer || !tableBody || !db) {
+        if (statsContainer) statsContainer.innerHTML = '<div class="text-red-500">Firebase가 설정되지 않았습니다. config를 확인하세요.</div>';
+        return;
+      }
+
+      // Cleanup previous listener
+      if (adminUnsubscribe) {
+        adminUnsubscribe();
+        adminUnsubscribe = null;
+      }
+
+      const membersCol = db.collection('guild_members');
+      const currentId = getCurrentUser();
+
+      // Real-time listener - updates automatically when new members sign up
+      adminUnsubscribe = membersCol.onSnapshot(snapshot => {
+        const users = [];
+        snapshot.forEach(doc => {
+          users.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Stats
+        const total = users.length;
+        const g1 = users.filter(u => u.grade === 1).length;
+        const g2 = users.filter(u => u.grade === 2).length;
+        const g3 = users.filter(u => u.grade === 3).length;
+        
+        statsContainer.innerHTML = `
+          <div class="bg-slate-50 border rounded-2xl p-3 text-center">
+            <div class="text-xs text-slate-500">총 가입자</div>
+            <div class="text-2xl font-extrabold">${total}명</div>
+          </div>
+          <div class="bg-gray-100 border rounded-2xl p-3 text-center">
+            <div class="text-xs text-gray-600">신입</div>
+            <div class="text-2xl font-extrabold">${g1}명</div>
+          </div>
+          <div class="bg-blue-100 border rounded-2xl p-3 text-center">
+            <div class="text-xs text-blue-600">정회원</div>
+            <div class="text-2xl font-extrabold">${g2}명</div>
+          </div>
+          <div class="bg-purple-100 border rounded-2xl p-3 text-center">
+            <div class="text-xs text-purple-600">운영진</div>
+            <div class="text-2xl font-extrabold">${g3}명</div>
+          </div>
+        `;
+        
+        // Table
+        tableBody.innerHTML = '';
+        users.forEach(user => {
+          const tr = document.createElement('tr');
+          const joined = new Date(user.joined).toLocaleDateString('ko-KR');
+          
+          let gradeSelect = '';
+          if (user.id !== currentId || currentId === '신궁상폐') {
+            gradeSelect = `
+              <select onchange="changeAdminGrade('${user.id}', this.value)" class="text-xs border px-2 py-1 rounded bg-white">
+                <option value="1" ${user.grade===1?'selected':''}>신입</option>
+                <option value="2" ${user.grade===2?'selected':''}>정회원</option>
+                <option value="3" ${user.grade===3?'selected':''}>운영진</option>
+              </select>
+            `;
+          } else {
+            gradeSelect = `<span class="text-xs">${getGradeName(user.grade)}</span>`;
+          }
+          
+          tr.innerHTML = `
+            <td class="py-2 font-medium">${user.id}</td>
+            <td class="py-2">
+              <span class="text-xs px-2 py-0.5 rounded-full ${user.grade === 3 ? 'bg-purple-100 text-purple-700' : user.grade === 2 ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'}">
+                ${getGradeName(user.grade)}
+              </span>
+            </td>
+            <td class="py-2 text-xs text-slate-500">${joined}</td>
+            <td class="py-2">${gradeSelect}</td>
+          `;
+          tableBody.appendChild(tr);
+        });
+      }, error => {
+        console.error("Admin snapshot error:", error);
+      });
+    }
+
+    async function changeAdminGrade(targetId, newGrade) {
+      const result = await updateUserGrade(targetId, newGrade);
+      if (result.success) {
+        showToast('등급 변경 완료');
+        await renderAdminView();
+        await renderMemberList(); // sync the other list
+      } else {
+        showToast(result.message);
+      }
     }
 
     // ==================== MODALS ====================
@@ -361,25 +756,25 @@
     }
 
     // ==================== FORM HANDLERS ====================
-    function handleLogin(e) {
+    async function handleLogin(e) {
       e.preventDefault();
       
       const id = document.getElementById('login-id').value.trim();
       const pw = document.getElementById('login-pw').value;
       
-      const result = login(id, pw);
+      const result = await login(id, pw);
       
       if (result.success) {
         closeModals();
         showToast(`${result.user}님 환영합니다!`);
         updateNav();
-        showMainContent(true);
+        await showMainContent(true);
       } else {
         showToast(result.message);
       }
     }
 
-    function handleSignup(e) {
+    async function handleSignup(e) {
       e.preventDefault();
       
       const id = document.getElementById('signup-id').value.trim();
@@ -396,21 +791,42 @@
         return;
       }
       
-      const result = signup(id, pw);
+      const result = await signup(id, pw);
       
       if (result.success) {
         closeModals();
-        showToast('회원가입이 완료되었습니다! 로그인해주세요.');
-        // Auto open login
-        setTimeout(() => {
-          showLoginModal();
-        }, 600);
+        showToast('회원가입이 완료되었습니다!');
+
+        // Refresh views for currently logged in user (especially master)
+        await renderMemberList();
+        const curr = getCurrentUser();
+        if (curr === '신궁상폐') {
+          // Snapshot will automatically update the open view (no need to switch)
+          await renderAdminView();
+        }
+
+        // Only force login modal if no one is currently logged in
+        if (!curr) {
+          setTimeout(() => {
+            showLoginModal();
+          }, 600);
+        }
       } else {
         showToast(result.message);
       }
     }
 
     function logout() {
+      // Cleanup real-time listeners
+      if (adminUnsubscribe) {
+        adminUnsubscribe();
+        adminUnsubscribe = null;
+      }
+      if (memberListUnsubscribe) {
+        memberListUnsubscribe();
+        memberListUnsubscribe = null;
+      }
+      
       clearCurrentUser();
       updateNav();
       showMainContent(false);
@@ -479,8 +895,10 @@
 
     // ==================== INIT ====================
     function init() {
-      // Load master account
-      loadUsers();
+      initFirebase();   // Initialize shared database
+
+      // Ensure master account exists in Firestore (runs once)
+      ensureMasterAccount();
       
       // Check login status
       const currentUser = getCurrentUser();
