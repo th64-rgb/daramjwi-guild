@@ -7,9 +7,1132 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
+  <style>
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #1a1612;
+  --bg-card: #252018;
+  --bg-board: #c4a574;
+  --bg-board-dark: #a8894f;
+  --text: #f0ebe3;
+  --text-muted: #9a8f82;
+  --accent: #e8a838;
+  --accent-hover: #f5bc4a;
+  --guild: #166534;
+  --guild-light: #22c55e;
+  --guild-bg: #0f3d24;
+  --black-stone: #1a1a1a;
+  --white-stone: #f5f0e8;
+  --border: #3d3529;
+  --success: #5cb85c;
+  --error: #e74c3c;
+  --radius: 12px;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --nav-h: 56px;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Noto Sans KR', -apple-system, sans-serif;
+  color: var(--text);
+  line-height: 1.5;
+  overflow-x: hidden;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(34,197,94,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(232,168,56,0.05) 0%, transparent 50%),
+    var(--bg);
+}
+
+/* 길드 상단바 */
+.guild-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: linear-gradient(135deg, var(--guild-bg) 0%, var(--guild) 100%);
+  border-bottom: 1px solid rgba(34,197,94,0.3);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.guild-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.6rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.guild-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.guild-icon { font-size: 1.75rem; line-height: 1; }
+
+.guild-name {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #fff;
+  display: block;
+  line-height: 1.2;
+}
+
+.guild-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  background: rgba(255,255,255,0.15);
+  color: #bbf7d0;
+  border-radius: 10px;
+  margin-top: 0.1rem;
+}
+
+.guild-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  font-size: 0.75rem;
+  color: #bbf7d0;
+}
+
+.guild-leader { font-weight: 600; }
+.guild-mode { opacity: 0.85; }
+
+/* 서버 미연결 안내 */
+.server-warning {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.server-warning-box {
+  background: var(--bg-card);
+  border: 1px solid var(--guild-light);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.server-warning-box h3 {
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.server-warning-box p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem; }
+
+.server-warning-box ol {
+  margin: 0.75rem 0 1rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.server-warning-box code {
+  background: var(--border);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.server-warning-note {
+  font-size: 0.8rem !important;
+  font-style: italic;
+}
+
+.app {
+  min-height: calc(100vh - var(--nav-h));
+}
+
+.screen {
+  display: none;
+  min-height: 100vh;
+}
+
+.screen.active {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 닉네임 화면 */
+.card-center {
+  margin: auto;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem 2rem;
+  box-shadow: var(--shadow);
+}
+
+.logo {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.logo-stone {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.logo-stone.sm {
+  width: 20px;
+  height: 20px;
+}
+
+.logo-stone.black {
+  background: radial-gradient(circle at 35% 35%, #444, var(--black-stone));
+  box-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.logo-stone.white {
+  background: radial-gradient(circle at 35% 35%, #fff, var(--white-stone));
+  box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  border: 1px solid #ccc;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}
+
+label {
+  display: block;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+input[type="text"]::placeholder {
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--error);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  text-align: left;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* 버튼 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--guild-light), var(--guild));
+  color: #fff;
+  width: 100%;
+  margin-top: 1.25rem;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #4ade80, #15803d);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background: #4d4438;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.btn-ghost:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1.05rem;
+}
+
+.btn-ready-active {
+  background: var(--success) !important;
+  color: #fff !important;
+}
+
+.action-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.action-row .btn { flex: 1; margin-top: 0; }
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.checkbox-label input { width: auto; accent-color: var(--accent); }
+
+.select-sm {
+  padding: 0.4rem 0.6rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.online-indicator {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 0.2rem 0.6rem;
+  background: var(--border);
+  border-radius: 12px;
+}
+
+.conn-status {
+  font-size: 0.7rem;
+  transition: color 0.3s;
+}
+
+.conn-status.connected { color: var(--success); }
+.conn-status.disconnected { color: var(--error); animation: pulse 1s infinite; }
+
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header h2 {
+  font-size: 1.25rem;
+}
+
+.logo-mini {
+  display: flex;
+  gap: 3px;
+}
+
+.nickname-badge {
+  background: var(--border);
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.room-code-display {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.room-code-display strong {
+  color: var(--accent);
+  font-family: monospace;
+  font-size: 1.1rem;
+  letter-spacing: 0.15em;
+}
+
+/* 로비 */
+.lobby-content {
+  flex: 1;
+  padding: 2rem 1.5rem;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.lobby-hero {
+  background: linear-gradient(135deg, rgba(22,101,52,0.25), rgba(37,32,24,0.8));
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.lobby-hero h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.35rem;
+  color: var(--guild-light);
+}
+
+.lobby-hero p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.join-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.join-form input {
+  flex: 1;
+  text-transform: uppercase;
+  font-family: monospace;
+  letter-spacing: 0.1em;
+}
+
+.room-list-section h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge {
+  background: var(--border);
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.room-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.room-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.2s;
+}
+
+.room-item:hover {
+  border-color: var(--accent);
+}
+
+.room-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.room-item-code {
+  font-family: monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+.room-item-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.room-item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.status-tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-tag.waiting,
+.status-tag.ready {
+  background: rgba(232, 168, 56, 0.2);
+  color: var(--accent);
+}
+
+.status-tag.playing {
+  background: rgba(92, 184, 92, 0.2);
+  color: var(--success);
+}
+
+.status-tag.finished {
+  background: rgba(154, 143, 130, 0.2);
+  color: var(--text-muted);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem;
+  font-size: 0.9rem;
+}
+
+/* 게임 레이아웃 */
+.game-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr 260px;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  align-items: start;
+}
+
+.practice-layout {
+  grid-template-columns: 220px 1fr;
+  justify-content: center;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  position: relative;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.player-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(232, 168, 56, 0.25);
+}
+
+.player-stone {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.player-stone.black {
+  background: radial-gradient(circle at 35% 35%, #444, var(--black-stone));
+}
+
+.player-stone.white {
+  background: radial-gradient(circle at 35% 35%, #fff, var(--white-stone));
+  border: 1px solid #bbb;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.player-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.player-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.player-timer {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-timer.urgent { color: var(--error); animation: pulse 0.8s infinite; }
+
+.ready-tag {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.35rem;
+  font-size: 0.65rem;
+  background: var(--success);
+  color: #fff;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.offline-tag {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.35rem;
+  font-size: 0.6rem;
+  color: var(--error);
+  font-weight: 600;
+}
+
+.turn-indicator {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  font-size: 0.8rem;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.status-box {
+  padding: 0.85rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.status-box.win {
+  color: var(--accent);
+  font-weight: 600;
+  border-color: var(--accent);
+}
+
+.status-box.ready-state {
+  color: var(--accent);
+  border-color: rgba(232,168,56,0.4);
+}
+
+.action-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.action-panel .btn { flex: 1; min-width: calc(50% - 0.2rem); }
+.action-panel .btn-primary { width: 100%; margin-top: 0; }
+
+.request-panel {
+  padding: 0.75rem;
+  background: rgba(232,168,56,0.1);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+}
+
+.request-panel p { margin-bottom: 0.5rem; }
+.request-buttons { display: flex; gap: 0.4rem; }
+
+/* 오목판 */
+.board-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.board-wrapper { display: flex; flex-direction: column; align-items: center; }
+.board-row { display: flex; align-items: stretch; }
+
+.board-labels {
+  display: grid;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.board-labels-top {
+  grid-template-columns: 20px repeat(15, 1fr);
+  width: calc(20px + min(70vw, 70vh, 560px));
+  margin-bottom: 2px;
+  text-align: center;
+}
+
+.board-labels-left {
+  grid-template-rows: repeat(15, 1fr);
+  width: 20px;
+  margin-right: 2px;
+  align-content: stretch;
+  height: min(70vw, 70vh, 560px);
+}
+
+.board-labels span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  grid-template-rows: repeat(15, 1fr);
+  width: min(70vw, 70vh, 560px);
+  height: min(70vw, 70vh, 560px);
+  background: var(--bg-board);
+  border: 3px solid var(--bg-board-dark);
+  border-radius: 4px;
+  box-shadow: var(--shadow), inset 0 0 40px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--bg-board-dark) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--bg-board-dark) 1px, transparent 1px);
+  background-size: calc(100% / 14) calc(100% / 14);
+  background-position: calc(100% / 28) calc(100% / 28);
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+.cell {
+  position: relative;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.cell.star-point::before {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--bg-board-dark);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.cell .stone.preview {
+  opacity: 0.45;
+  animation: none;
+  pointer-events: none;
+}
+
+.cell .stone.preview.black {
+  background: radial-gradient(circle at 35% 30%, #555, #111);
+}
+
+.cell .stone.preview.white {
+  background: radial-gradient(circle at 35% 30%, #fff, #ddd);
+  border: 1px solid #bbb;
+}
+
+.cell.disabled {
+  cursor: default;
+}
+
+.cell .stone {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  z-index: 2;
+  animation: placeStone 0.2s ease-out;
+}
+
+@keyframes placeStone {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.cell .stone.black {
+  background: radial-gradient(circle at 35% 30%, #555, #111);
+  box-shadow: 1px 2px 3px rgba(0,0,0,0.5);
+}
+
+.cell .stone.white {
+  background: radial-gradient(circle at 35% 30%, #fff, #ddd);
+  box-shadow: 1px 2px 3px rgba(0,0,0,0.3);
+  border: 1px solid #bbb;
+}
+
+.cell .stone.last-move {
+  box-shadow: 0 0 0 2px var(--accent), 1px 2px 3px rgba(0,0,0,0.4);
+}
+
+.cell .stone.win-stone {
+  box-shadow: 0 0 0 3px var(--success), 0 0 12px rgba(92,184,92,0.6);
+  animation: winGlow 1s ease-in-out infinite alternate;
+}
+
+@keyframes winGlow {
+  from { box-shadow: 0 0 0 3px var(--success), 0 0 8px rgba(92,184,92,0.4); }
+  to { box-shadow: 0 0 0 3px var(--success), 0 0 16px rgba(92,184,92,0.8); }
+}
+
+/* 관전 패널 */
+.spectator-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.spectator-panel h4 {
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spectator-list {
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.spectator-list li {
+  padding: 0.35rem 0;
+  color: var(--text-muted);
+}
+
+.spectator-list li.empty {
+  font-style: italic;
+}
+
+.role-badge {
+  text-align: center;
+  padding: 0.6rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.role-badge.player {
+  background: rgba(232, 168, 56, 0.15);
+  color: var(--accent);
+}
+
+/* 기보 */
+.move-history-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+}
+
+.move-history-panel h4 {
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.move-history {
+  list-style: none;
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: 0.78rem;
+  font-family: monospace;
+}
+
+.move-history li { padding: 0.15rem 0; color: var(--text-muted); }
+.move-history li.empty { font-style: italic; font-family: inherit; }
+.move-color.black { color: #aaa; }
+.move-color.white { color: #eee; }
+.move-num { color: var(--text-muted); margin-right: 0.25rem; }
+
+.kick-btn {
+  background: none;
+  border: none;
+  color: var(--error);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0 0.25rem;
+  opacity: 0.6;
+}
+
+.kick-btn:hover { opacity: 1; }
+
+/* 채팅 */
+.chat-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.chat-panel h4 { font-size: 0.85rem; margin-bottom: 0.5rem; }
+
+.chat-messages {
+  flex: 1;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.chat-msg { line-height: 1.4; word-break: break-word; }
+.chat-msg strong { color: var(--text); font-weight: 500; }
+.chat-system { color: var(--text-muted); font-style: italic; font-size: 0.75rem; }
+.chat-time { color: var(--border); font-size: 0.7rem; margin-right: 0.25rem; }
+
+.chat-input-row { display: flex; gap: 0.35rem; }
+.chat-input-row input { flex: 1; padding: 0.45rem 0.6rem; font-size: 0.85rem; }
+
+.emoji-row { display: flex; gap: 0.25rem; margin-top: 0.4rem; }
+
+.emoji-btn {
+  background: var(--border);
+  border: none;
+  border-radius: 6px;
+  padding: 0.2rem 0.45rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: transform 0.15s;
+}
+
+.emoji-btn:hover { transform: scale(1.15); }
+
+#confetti-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* 토스트 */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow);
+  z-index: 1000;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast:not(.show) {
+  opacity: 0;
+  transform: translateX(-50%) translateY(10px);
+}
+
+/* 반응형 */
+@media (max-width: 1100px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    justify-items: center;
+  }
+
+  .sidebar-right { width: 100%; max-width: 500px; }
+  .chat-panel { min-height: 160px; }
+}
+
+@media (max-width: 900px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    justify-items: center;
+  }
+
+  .sidebar-left {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .sidebar-left .player-card {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .sidebar-left .status-box {
+    width: 100%;
+  }
+
+  .sidebar-right {
+    width: 100%;
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 600px) {
+  .guild-meta { display: none; }
+  .guild-name { font-size: 1rem; }
+}
+
+@media (max-width: 500px) {
+  .join-form {
+    flex-wrap: wrap;
+  }
+
+  .join-form input {
+    width: 100%;
+  }
+
+  .room-item {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .room-item-actions {
+    width: 100%;
+  }
+
+  .room-item-actions .btn {
+    flex: 1;
+  }
+}
+</style>
 </head>
 <body>
+  <!-- 길드 공통 상단바 -->
+  <nav class="guild-nav">
+    <div class="guild-nav-inner">
+      <div class="guild-brand">
+        <span class="guild-icon">🐿️</span>
+        <div>
+          <span class="guild-name">다람쥐구조대</span>
+          <span class="guild-badge">알리사 서버</span>
+        </div>
+      </div>
+      <div class="guild-meta">
+        <span class="guild-leader">길드장 네로롱</span>
+        <span class="guild-mode">오목 멀티플레이</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 서버 미연결 안내 (index.html 직접 열었을 때) -->
+  <div id="server-warning" class="server-warning hidden">
+    <div class="server-warning-box">
+      <h3>⚠️ 서버가 실행되지 않았습니다</h3>
+      <p>실시간 멀티플레이 서버에 연결되지 않았습니다.</p>
+      <ol>
+        <li>Render 서버가 배포·실행 중인지 확인</li>
+        <li><code>js/socket-config.js</code>의 서버 URL 확인</li>
+        <li>잠시 후 새로고침</li>
+      </ol>
+      <p class="server-warning-note">AI 연습 모드는 서버 없이도 이용 가능합니다.</p>
+      <button id="btn-dismiss-warning" class="btn btn-secondary btn-sm">AI 연습만 하기</button>
+    </div>
+  </div>
+
   <div class="app">
     <!-- 닉네임 입력 -->
     <section id="screen-nickname" class="screen active">
@@ -26,6 +1149,7 @@
           <p id="nickname-error" class="error hidden"></p>
           <button type="submit" class="btn btn-primary">입장하기</button>
         </form>
+        <button id="btn-practice-from-home" class="btn btn-secondary" style="margin-top:0.75rem;width:100%">🤖 AI 연습 (서버 불필요)</button>
       </div>
     </section>
 
@@ -34,7 +1158,7 @@
       <header class="header">
         <div class="header-left">
           <span class="logo-mini"><span class="logo-stone black sm"></span><span class="logo-stone white sm"></span></span>
-          <h2>다람쥐구조대 로비</h2>
+          <h2>오목 로비</h2>
           <span class="online-indicator" id="online-count">접속 0명</span>
         </div>
         <div class="header-right">
@@ -46,6 +1170,11 @@
       </header>
 
       <div class="lobby-content">
+        <div class="lobby-hero">
+          <h3>🐿️ 길드원들과 오목 한 판!</h3>
+          <p>방을 만들거나 코드로 참가하세요. 가득 찬 방은 관전도 가능합니다.</p>
+        </div>
+
         <div class="lobby-actions">
           <div class="action-row">
             <button id="btn-create-room" class="btn btn-primary btn-lg">
@@ -226,9 +1355,947 @@
   <canvas id="confetti-canvas"></canvas>
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/sounds.js"></script>
-  <script src="/js/ai.js"></script>
-  <script src="/js/client.js"></script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script>
+// GitHub Pages 서브경로 (/daramjwi-guild/) 지원
+(function () {
+  const match = location.pathname.match(/^(\/[^/]+\/)/);
+  window.__BASE__ = match ? match[1] : '/';
+})();
+</script>
+  <script>
+// GitHub Pages(정적) ↔ Render(서버) 연결 설정
+// Render 배포 후 아래 URL을 본인 서버 주소로 바꾸세요
+window.SOCKET_SERVER = (function () {
+  const host = location.hostname;
+
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return null; // 로컬: 같은 서버 사용
+  }
+
+  if (host.includes('github.io')) {
+    // TODO: Render 배포 후 URL 입력 (예: https://daramjwi-omok.onrender.com)
+    return 'https://daramjwi-omok.onrender.com';
+  }
+
+  return null;
+})();
+</script>
+  <script>
+const SoundManager = (() => {
+  let enabled = localStorage.getItem('omok_sound') !== 'off';
+  let ctx = null;
+
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return ctx;
+  }
+
+  function tone(freq, duration, type = 'sine', vol = 0.15) {
+    if (!enabled) return;
+    try {
+      const ac = getCtx();
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start();
+      osc.stop(ac.currentTime + duration);
+    } catch (_) { /* ignore */ }
+  }
+
+  return {
+    isEnabled: () => enabled,
+    toggle() {
+      enabled = !enabled;
+      localStorage.setItem('omok_sound', enabled ? 'on' : 'off');
+      if (enabled) this.place();
+      return enabled;
+    },
+    place() { tone(440, 0.08, 'sine', 0.12); },
+    win() {
+      if (!enabled) return;
+      [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.2, 'sine', 0.18), i * 120));
+    },
+    notify() { tone(330, 0.12, 'triangle', 0.1); },
+    error() { tone(180, 0.15, 'square', 0.08); },
+    tick() { tone(800, 0.03, 'sine', 0.05); },
+  };
+})();
+</script>
+  <script>
+const OmokAI = (() => {
+  const SIZE = 15;
+  const WIN = 5;
+
+  function createBoard() {
+    return Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+  }
+
+  function inBounds(r, c) {
+    return r >= 0 && r < SIZE && c >= 0 && c < SIZE;
+  }
+
+  function countLine(board, r, c, dr, dc, color) {
+    let n = 0;
+    for (let i = 0; i < WIN; i++) {
+      const nr = r + dr * i;
+      const nc = c + dc * i;
+      if (!inBounds(nr, nc) || board[nr][nc] !== color) return 0;
+      n++;
+    }
+    return n;
+  }
+
+  function evaluatePoint(board, r, c, color) {
+    if (board[r][c]) return -1;
+    const opp = color === 'black' ? 'white' : 'black';
+    let score = 0;
+    const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+
+    for (const [dr, dc] of dirs) {
+      const mine = countLine(board, r, c, dr, dc, color);
+      const theirs = countLine(board, r, c, dr, dc, opp);
+      if (mine >= WIN) score += 100000;
+      else if (mine === 4) score += 10000;
+      else if (mine === 3) score += 1000;
+      else if (mine === 2) score += 100;
+      if (theirs >= WIN) score += 50000;
+      else if (theirs === 4) score += 8000;
+      else if (theirs === 3) score += 800;
+      else if (theirs === 2) score += 80;
+    }
+
+    const center = Math.abs(r - 7) + Math.abs(c - 7);
+    score += (14 - center) * 3;
+    score += Math.random() * 5;
+    return score;
+  }
+
+  function findWinMove(board, color) {
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c]) continue;
+        board[r][c] = color;
+        if (checkWin(board, r, c, color)) {
+          board[r][c] = null;
+          return [r, c];
+        }
+        board[r][c] = null;
+      }
+    }
+    return null;
+  }
+
+  function checkWin(board, row, col, color) {
+    const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+    for (const [dr, dc] of dirs) {
+      let count = 1;
+      for (let i = 1; i < WIN; i++) {
+        const r = row + dr * i, c = col + dc * i;
+        if (!inBounds(r, c) || board[r][c] !== color) break;
+        count++;
+      }
+      for (let i = 1; i < WIN; i++) {
+        const r = row - dr * i, c = col - dc * i;
+        if (!inBounds(r, c) || board[r][c] !== color) break;
+        count++;
+      }
+      if (count >= WIN) return true;
+    }
+    return false;
+  }
+
+  function getCandidates(board) {
+    const set = new Set();
+    let hasStone = false;
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c]) {
+          hasStone = true;
+          for (let dr = -2; dr <= 2; dr++) {
+            for (let dc = -2; dc <= 2; dc++) {
+              const nr = r + dr, nc = c + dc;
+              if (inBounds(nr, nc) && !board[nr][nc]) set.add(`${nr},${nc}`);
+            }
+          }
+        }
+      }
+    }
+    if (!hasStone) return [[7, 7]];
+    return [...set].map((s) => s.split(',').map(Number));
+  }
+
+  function getMove(board, color, difficulty = 'normal') {
+    const win = findWinMove(board, color);
+    if (win) return win;
+
+    const block = findWinMove(board, color === 'black' ? 'white' : 'black');
+    if (block) return block;
+
+    if (difficulty === 'easy' && Math.random() < 0.35) {
+      const candidates = getCandidates(board);
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    const candidates = getCandidates(board);
+    let best = null;
+    let bestScore = -Infinity;
+    const depth = difficulty === 'hard' ? 1.5 : difficulty === 'easy' ? 0.6 : 1;
+
+    for (const [r, c] of candidates) {
+      const score = evaluatePoint(board, r, c, color) * depth;
+      if (score > bestScore) {
+        bestScore = score;
+        best = [r, c];
+      }
+    }
+    return best || [7, 7];
+  }
+
+  return { createBoard, checkWin, getMove, SIZE };
+})();
+</script>
+  <script>
+let socket = null;
+let serverAvailable = false;
+
+function initSocket() {
+  if (typeof io === 'undefined') return false;
+  try {
+    const opts = { reconnection: true, reconnectionAttempts: 20 };
+    const serverUrl = window.SOCKET_SERVER || undefined;
+    socket = serverUrl ? io(serverUrl, opts) : io(opts);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function emitAsync(event, data) {
+  return new Promise((resolve) => {
+    if (!socket) {
+      resolve({ success: false, error: '서버에 연결되지 않았습니다.' });
+      return;
+    }
+    socket.emit(event, data, resolve);
+  });
+}
+
+function checkServerConnection() {
+  const hasSocketLib = typeof io !== 'undefined';
+  const isFileProtocol = location.protocol === 'file:';
+
+  if (!hasSocketLib || isFileProtocol) {
+    $('#server-warning')?.classList.remove('hidden');
+    return false;
+  }
+
+  if (!socket) initSocket();
+  bindSocketEvents();
+
+  let checked = false;
+  const timeout = setTimeout(() => {
+    if (!checked && !serverAvailable) {
+      $('#server-warning')?.classList.remove('hidden');
+    }
+  }, 3000);
+
+  socket.on('connect', () => {
+    checked = true;
+    serverAvailable = true;
+    clearTimeout(timeout);
+    $('#server-warning')?.classList.add('hidden');
+    updateConnStatus(true);
+    if (nickname) emitAsync('setNickname', nickname);
+  });
+
+  socket.on('disconnect', () => {
+    serverAvailable = false;
+    updateConnStatus(false);
+  });
+
+  if (socket.connected) {
+    checked = true;
+    serverAvailable = true;
+    clearTimeout(timeout);
+    updateConnStatus(true);
+  }
+
+  return true;
+}
+
+const BOARD_SIZE = 15;
+const COL_LABELS = 'ABCDEFGHJKLMNO'.split('');
+
+let nickname = localStorage.getItem('omok_nickname') || '';
+let currentRoom = null;
+let boardEl = null;
+let lastMoveCount = 0;
+let lastStatus = null;
+let timerInterval = null;
+let localTurnRemaining = null;
+
+// AI 연습
+let practiceBoard = null;
+let practiceBoardEl = null;
+let practiceCurrent = 'black';
+let practiceOver = false;
+
+const $ = (sel) => document.querySelector(sel);
+
+const screens = {
+  nickname: $('#screen-nickname'),
+  lobby: $('#screen-lobby'),
+  game: $('#screen-game'),
+  practice: $('#screen-practice'),
+};
+
+function showScreen(name) {
+  Object.values(screens).forEach((s) => s.classList.remove('active'));
+  screens[name].classList.add('active');
+  if (name !== 'game') stopLocalTimer();
+}
+
+function showToast(message, duration = 3000) {
+  const toast = $('#toast');
+  toast.textContent = message;
+  toast.classList.remove('hidden');
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.classList.add('hidden'), 300);
+  }, duration);
+}
+
+function updateConnStatus(connected) {
+  ['conn-status', 'conn-status-game'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.toggle('connected', connected);
+      el.classList.toggle('disconnected', !connected);
+      el.title = connected ? '연결됨' : '연결 끊김';
+    }
+  });
+}
+
+function buildBoardLabels() {
+  const top = $('#board-labels-top');
+  const left = $('#board-labels-left');
+  if (!top || top.children.length) return;
+  top.innerHTML = '<span></span>' + COL_LABELS.map((l) => `<span>${l}</span>`).join('');
+  left.innerHTML = Array.from({ length: BOARD_SIZE }, (_, i) => `<span>${i + 1}</span>`).join('');
+}
+
+function launchConfetti() {
+  const canvas = $('#confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const pieces = Array.from({ length: 120 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -20 - Math.random() * 100,
+    r: 4 + Math.random() * 6,
+    d: 2 + Math.random() * 4,
+    color: ['#e8a838', '#5cb85c', '#f0ebe3', '#e74c3c'][Math.floor(Math.random() * 4)],
+    tilt: Math.random() * 10,
+    tiltAngle: 0,
+  }));
+
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach((p) => {
+      p.tiltAngle += 0.1;
+      p.y += p.d;
+      p.x += Math.sin(p.tiltAngle) * 2;
+      ctx.beginPath();
+      ctx.fillStyle = p.color;
+      ctx.ellipse(p.x, p.y, p.r, p.r * 0.6, p.tilt, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    frame++;
+    if (frame < 180) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  draw();
+}
+
+// ── 닉네임 ──
+const nicknameForm = $('#nickname-form');
+const nicknameInput = $('#nickname-input');
+if (nickname) nicknameInput.value = nickname;
+
+nicknameForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!serverAvailable) {
+    $('#server-warning')?.classList.remove('hidden');
+    SoundManager.error();
+    return;
+  }
+  const result = await emitAsync('setNickname', nicknameInput.value.trim());
+  if (!result.success) {
+    $('#nickname-error').textContent = result.error;
+    $('#nickname-error').classList.remove('hidden');
+    SoundManager.error();
+    return;
+  }
+  nickname = result.nickname;
+  localStorage.setItem('omok_nickname', nickname);
+  $('#nickname-error').classList.add('hidden');
+  $('#lobby-nickname').textContent = nickname;
+  showScreen('lobby');
+  checkUrlRoom();
+});
+
+$('#btn-practice-from-home')?.addEventListener('click', () => {
+  nickname = nicknameInput.value.trim() || nickname || '플레이어';
+  $('#practice-nickname').textContent = nickname;
+  startPractice();
+  showScreen('practice');
+});
+
+$('#btn-dismiss-warning')?.addEventListener('click', () => {
+  $('#server-warning')?.classList.add('hidden');
+  nickname = nicknameInput.value.trim() || '플레이어';
+  $('#practice-nickname').textContent = nickname;
+  startPractice();
+  showScreen('practice');
+});
+
+$('#btn-logout').addEventListener('click', () => {
+  nickname = '';
+  localStorage.removeItem('omok_nickname');
+  showScreen('nickname');
+});
+
+// ── 로비 ──
+$('#btn-create-room').addEventListener('click', async () => {
+  const isPrivate = $('#private-room-check').checked;
+  const result = await emitAsync('createRoom', { isPrivate });
+  if (!result.success) { showToast(result.error); return; }
+  enterGame(result.room);
+});
+
+$('#btn-join-room').addEventListener('click', () => joinByCode(false));
+$('#btn-spectate-room').addEventListener('click', () => joinByCode(true));
+$('#join-code-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinByCode(false); });
+
+async function joinByCode(asSpectator) {
+  const code = $('#join-code-input').value.trim().toUpperCase();
+  if (!code) { showToast('방 코드를 입력해주세요.'); return; }
+  const result = await emitAsync('joinRoom', { code, asSpectator });
+  if (!result.success) { showToast(result.error); SoundManager.error(); return; }
+  if (result.reconnected) showToast('재접속했습니다!');
+  enterGame(result.room);
+}
+
+function checkUrlRoom() {
+  const params = new URLSearchParams(location.search);
+  const room = params.get('room');
+  if (room) {
+    $('#join-code-input').value = room.toUpperCase();
+    history.replaceState({}, '', location.pathname);
+  }
+}
+
+function renderRoomList(rooms) {
+  const list = $('#room-list');
+  $('#room-count').textContent = rooms.length;
+  if (!rooms.length) {
+    list.innerHTML = '<p class="empty-state">열린 방이 없습니다. 새 방을 만들어보세요!</p>';
+    return;
+  }
+  const labels = { waiting: '대기', ready: '준비', playing: '진행', finished: '종료' };
+  list.innerHTML = rooms.map((room) => {
+    const canJoin = room.playerCount < 2 && room.status !== 'finished';
+    return `
+      <div class="room-item">
+        <div class="room-item-info">
+          <span class="room-item-code">${room.code}</span>
+          <span class="room-item-meta">
+            ${room.host} · ${room.playerCount}/2 · 관전 ${room.spectatorCount}
+            · ${room.moveCount}수
+            <span class="status-tag ${room.status}">${labels[room.status] || room.status}</span>
+          </span>
+        </div>
+        <div class="room-item-actions">
+          ${canJoin ? `<button class="btn btn-secondary btn-sm btn-join" data-code="${room.code}">참가</button>` : ''}
+          <button class="btn btn-ghost btn-sm btn-spectate" data-code="${room.code}">관전</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.btn-join').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const r = await emitAsync('joinRoom', { code: btn.dataset.code, asSpectator: false });
+      if (!r.success) { showToast(r.error); return; }
+      enterGame(r.room);
+    });
+  });
+  list.querySelectorAll('.btn-spectate').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const r = await emitAsync('joinRoom', { code: btn.dataset.code, asSpectator: true });
+      if (!r.success) { showToast(r.error); return; }
+      enterGame(r.room);
+    });
+  });
+}
+
+let socketEventsBound = false;
+
+function bindSocketEvents() {
+  if (!socket || socketEventsBound) return;
+  socketEventsBound = true;
+  socket.on('roomList', renderRoomList);
+  socket.on('onlineCount', (n) => { $('#online-count').textContent = `접속 ${n}명`; });
+  socket.on('roomUpdate', (room) => {
+    if (currentRoom && room.code === currentRoom.code) renderGame(room);
+  });
+  socket.on('kicked', ({ reason }) => {
+    showToast(reason);
+    currentRoom = null;
+    boardEl = null;
+    showScreen('lobby');
+  });
+}
+
+// ── 연결 ──
+bindSocketEvents();
+checkServerConnection();
+updateConnStatus(false);
+
+$('#btn-sound-toggle').addEventListener('click', () => {
+  const on = SoundManager.toggle();
+  $('#btn-sound-toggle').textContent = on ? '🔊' : '🔇';
+});
+$('#btn-sound-toggle').textContent = SoundManager.isEnabled() ? '🔊' : '🔇';
+
+// ── 게임 입장 ──
+function enterGame(room) {
+  currentRoom = room;
+  lastMoveCount = 0;
+  lastStatus = null;
+  if (boardEl) boardEl.innerHTML = '';
+  boardEl = null;
+  $('#game-nickname').textContent = nickname;
+  $('#game-room-code').textContent = room.code;
+  buildBoardLabels();
+  showScreen('game');
+  renderGame(room);
+}
+
+function buildBoard() {
+  boardEl = $('#board');
+  boardEl.innerHTML = '';
+  const stars = [[3,3],[3,11],[7,7],[11,3],[11,11]];
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row = row;
+      cell.dataset.col = col;
+      if (stars.some(([r,c]) => r === row && c === col)) cell.classList.add('star-point');
+      cell.addEventListener('click', onCellClick);
+      cell.addEventListener('mouseenter', onCellHover);
+      cell.addEventListener('mouseleave', onCellLeave);
+      boardEl.appendChild(cell);
+    }
+  }
+}
+
+function onCellHover(e) {
+  const cell = e.currentTarget;
+  if (!currentRoom || cell.classList.contains('occupied') || cell.classList.contains('disabled')) return;
+  if (currentRoom.role !== currentRoom.currentPlayer) return;
+  const preview = document.createElement('div');
+  preview.className = `stone preview ${currentRoom.role}`;
+  cell.appendChild(preview);
+}
+
+function onCellLeave(e) {
+  const prev = e.currentTarget.querySelector('.preview');
+  if (prev) prev.remove();
+}
+
+function onCellClick(e) {
+  const cell = e.currentTarget;
+  if (cell.classList.contains('occupied') || cell.classList.contains('disabled')) return;
+  if (!currentRoom || (currentRoom.role !== 'black' && currentRoom.role !== 'white')) return;
+  if (currentRoom.status !== 'playing' || currentRoom.currentPlayer !== currentRoom.role) return;
+  emitAsync('placeStone', {
+    row: parseInt(cell.dataset.row, 10),
+    col: parseInt(cell.dataset.col, 10),
+  }).then((r) => { if (!r.success) { showToast(r.error); SoundManager.error(); } });
+}
+
+function stopLocalTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function startLocalTimer(room) {
+  stopLocalTimer();
+  localTurnRemaining = room.turnRemaining;
+  if (room.status !== 'playing' || localTurnRemaining == null) return;
+  timerInterval = setInterval(() => {
+    if (localTurnRemaining > 0) {
+      localTurnRemaining--;
+      updateTimerDisplay(room.currentPlayer, localTurnRemaining);
+      if (localTurnRemaining <= 5 && localTurnRemaining > 0) SoundManager.tick();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay(player, sec) {
+  ['black', 'white'].forEach((c) => {
+    const el = $(`#timer-${c}`);
+    if (!el) return;
+    if (player === c && sec != null && currentRoom?.status === 'playing') {
+      el.textContent = `${sec}초`;
+      el.classList.remove('hidden');
+      el.classList.toggle('urgent', sec <= 10);
+    } else {
+      el.classList.add('hidden');
+    }
+  });
+}
+
+function renderGame(room) {
+  const prevMoves = lastMoveCount;
+  const prevStatus = lastStatus;
+  currentRoom = room;
+  lastMoveCount = room.moves.length;
+  lastStatus = room.status;
+
+  if (room.moves.length > prevMoves) SoundManager.place();
+  if (room.status === 'finished' && prevStatus === 'playing') {
+    SoundManager.win();
+    if (room.winner !== 'draw' && (room.role === room.winner || room.role === 'spectator')) {
+      launchConfetti();
+    }
+  }
+
+  // 플레이어 정보
+  $('#name-black').textContent = room.players.black?.nickname || '대기 중...';
+  $('#name-white').textContent = room.players.white?.nickname || '대기 중...';
+
+  ['black', 'white'].forEach((c) => {
+    const p = room.players[c];
+    $(`#offline-${c}`).classList.toggle('hidden', !p || p.connected !== false);
+    $(`#ready-${c}`).classList.toggle('hidden', !room.ready[c] || room.status === 'playing');
+    const card = $(`#player-${c}`);
+    card.classList.toggle('active', room.status === 'playing' && room.currentPlayer === c);
+    $(`#turn-${c}`).classList.toggle('hidden', !(room.status === 'playing' && room.currentPlayer === c));
+  });
+
+  updateTimerDisplay(room.currentPlayer, room.turnRemaining);
+  startLocalTimer(room);
+
+  // 상태
+  const statusEl = $('#game-status');
+  statusEl.classList.remove('win', 'ready-state');
+  if (room.status === 'waiting') {
+    statusEl.textContent = '상대 플레이어를 기다리는 중...';
+  } else if (room.status === 'ready') {
+    statusEl.classList.add('ready-state');
+    const b = room.ready.black, w = room.ready.white;
+    statusEl.textContent = b && w ? '곧 시작합니다...' : `준비 중... (흑 ${b?'✓':'○'} / 백 ${w?'✓':'○'})`;
+  } else if (room.status === 'playing') {
+    const name = room.currentPlayer === 'black' ? room.players.black?.nickname : room.players.white?.nickname;
+    statusEl.textContent = `${name || (room.currentPlayer === 'black' ? '흑' : '백')}의 차례`;
+  } else if (room.status === 'finished') {
+    statusEl.classList.add('win');
+    if (room.winner === 'draw') statusEl.textContent = '무승부!';
+    else {
+      const name = room.winner === 'black' ? room.players.black?.nickname : room.players.white?.nickname;
+      statusEl.textContent = `${name || (room.winner === 'black' ? '흑' : '백')} 승리! 🎉`;
+    }
+  }
+
+  // 보드
+  if (!boardEl || !boardEl.children.length) buildBoard();
+  const canPlay = (room.role === 'black' || room.role === 'white') &&
+    room.status === 'playing' && room.currentPlayer === room.role;
+  const winSet = new Set((room.winLine || []).map(([r,c]) => `${r},${c}`));
+
+  boardEl.querySelectorAll('.cell').forEach((cell) => {
+    const row = +cell.dataset.row, col = +cell.dataset.col;
+    const stone = room.board[row][col];
+    const preview = cell.querySelector('.preview');
+    cell.innerHTML = '';
+    if (preview && !stone && canPlay) cell.appendChild(preview);
+    cell.classList.toggle('occupied', !!stone);
+    cell.classList.toggle('disabled', !canPlay || !!stone || room.status !== 'playing');
+    if (stone) {
+      const el = document.createElement('div');
+      el.className = `stone ${stone}`;
+      if (room.lastMove?.row === row && room.lastMove?.col === col) el.classList.add('last-move');
+      if (winSet.has(`${row},${col}`)) el.classList.add('win-stone');
+      cell.appendChild(el);
+    }
+  });
+
+  // 기보
+  $('#move-count').textContent = room.moves.length;
+  const hist = $('#move-history');
+  if (!room.moves.length) {
+    hist.innerHTML = '<li class="empty">아직 수가 없습니다</li>';
+  } else {
+    hist.innerHTML = room.moves.map((m, i) => {
+      const label = COL_LABELS[m.col] + (m.row + 1);
+      return `<li><span class="move-num">${i+1}.</span> <span class="move-color ${m.color}">${m.color==='black'?'흑':'백'}</span> ${label}</li>`;
+    }).join('');
+    hist.scrollTop = hist.scrollHeight;
+  }
+
+  // 관전자
+  $('#spectator-count').textContent = room.spectators.length;
+  const specList = $('#spectator-list');
+  if (!room.spectators.length) {
+    specList.innerHTML = '<li class="empty">관전자 없음</li>';
+  } else {
+    specList.innerHTML = room.spectators.map((name) => {
+      const kick = room.isHost ? `<button class="kick-btn" data-name="${name}">✕</button>` : '';
+      return `<li>${name} ${kick}</li>`;
+    }).join('');
+    specList.querySelectorAll('.kick-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const r = await emitAsync('kickSpectator', btn.dataset.name);
+        if (!r.success) showToast(r.error);
+      });
+    });
+  }
+
+  // 역할
+  const roleBadge = $('#role-badge');
+  if (room.role === 'black') { roleBadge.textContent = '흑돌 플레이 중'; roleBadge.className = 'role-badge player'; }
+  else if (room.role === 'white') { roleBadge.textContent = '백돌 플레이 중'; roleBadge.className = 'role-badge player'; }
+  else { roleBadge.textContent = '관전 중'; roleBadge.className = 'role-badge'; }
+
+  // 버튼
+  const isPlayer = room.role === 'black' || room.role === 'white';
+  $('#btn-ready').classList.toggle('hidden', !isPlayer || room.status === 'playing' || room.status === 'finished');
+  $('#btn-ready').textContent = room.ready[room.role] ? '준비 취소' : '준비';
+  $('#btn-ready').classList.toggle('btn-ready-active', !!room.ready[room.role]);
+  $('#btn-switch-player').classList.toggle('hidden', room.role !== 'spectator' || room.status === 'playing');
+  $('#btn-undo').classList.toggle('hidden', !isPlayer || room.status !== 'playing' || !!room.undoRequest);
+  $('#btn-resign').classList.toggle('hidden', !isPlayer || room.status !== 'playing');
+  $('#btn-draw').classList.toggle('hidden', !isPlayer || room.status !== 'playing' || !!room.drawOffer);
+  $('#btn-rematch').classList.toggle('hidden', !isPlayer || room.status !== 'finished');
+  $('#btn-rematch').textContent = room.rematchVotes[room.role] ? '재대결 취소' : '재대결';
+
+  // 요청 패널
+  const reqPanel = $('#request-panel');
+  let reqType = null;
+  if (room.undoRequest && room.undoRequest !== room.role) {
+    reqType = 'undo';
+    $('#request-text').textContent = '상대가 무르기를 요청했습니다.';
+  } else if (room.drawOffer && room.drawOffer !== room.role) {
+    reqType = 'draw';
+    $('#request-text').textContent = '상대가 무승부를 제안했습니다.';
+  } else {
+    reqPanel.classList.add('hidden');
+  }
+  if (reqType && isPlayer) {
+    reqPanel.classList.remove('hidden');
+    reqPanel.dataset.type = reqType;
+  }
+
+  // 채팅
+  renderChat(room.chat);
+}
+
+function renderChat(messages) {
+  const box = $('#chat-messages');
+  if (!messages?.length) { box.innerHTML = ''; return; }
+  box.innerHTML = messages.map((m) => {
+    const cls = m.type === 'system' ? 'chat-system' : 'chat-user';
+    const time = new Date(m.time).toLocaleTimeString('ko', { hour: '2-digit', minute: '2-digit' });
+    return `<div class="chat-msg ${cls}"><span class="chat-time">${time}</span> <strong>${m.nickname}</strong> ${escapeHtml(m.text)}</div>`;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── 게임 액션 ──
+$('#btn-ready').addEventListener('click', async () => {
+  const ready = !currentRoom?.ready[currentRoom.role];
+  const r = await emitAsync('setReady', ready);
+  if (!r.success) showToast(r.error);
+});
+
+$('#btn-switch-player').addEventListener('click', async () => {
+  const r = await emitAsync('switchToPlayer');
+  if (!r.success) showToast(r.error);
+  else if (r.room) renderGame(r.room);
+});
+
+$('#btn-undo').addEventListener('click', async () => {
+  const r = await emitAsync('requestUndo');
+  if (!r.success) showToast(r.error);
+  else showToast('무르기를 요청했습니다.');
+});
+
+$('#btn-resign').addEventListener('click', async () => {
+  if (!confirm('정말 기권하시겠습니까?')) return;
+  const r = await emitAsync('resign');
+  if (!r.success) showToast(r.error);
+});
+
+$('#btn-draw').addEventListener('click', async () => {
+  const r = await emitAsync('offerDraw');
+  if (!r.success) showToast(r.error);
+  else showToast('무승부를 제안했습니다.');
+});
+
+$('#btn-rematch').addEventListener('click', async () => {
+  const vote = !currentRoom?.rematchVotes[currentRoom.role];
+  const r = await emitAsync('voteRematch', vote);
+  if (!r.success) showToast(r.error);
+});
+
+$('#btn-accept-request').addEventListener('click', async () => {
+  const type = $('#request-panel').dataset.type;
+  const r = await emitAsync(type === 'undo' ? 'respondUndo' : 'respondDraw', true);
+  if (!r.success) showToast(r.error);
+});
+
+$('#btn-decline-request').addEventListener('click', async () => {
+  const type = $('#request-panel').dataset.type;
+  const r = await emitAsync(type === 'undo' ? 'respondUndo' : 'respondDraw', false);
+  if (!r.success) showToast(r.error);
+});
+
+$('#btn-leave-room').addEventListener('click', async () => {
+  await emitAsync('leaveRoom');
+  currentRoom = null;
+  boardEl = null;
+  showScreen('lobby');
+});
+
+$('#btn-copy-code').addEventListener('click', () => {
+  if (!currentRoom) return;
+  navigator.clipboard.writeText(currentRoom.code).then(() => showToast('방 코드가 복사되었습니다!'));
+});
+
+$('#btn-share-link').addEventListener('click', () => {
+  if (!currentRoom) return;
+  const url = `${location.origin}${location.pathname}?room=${currentRoom.code}`;
+  navigator.clipboard.writeText(url).then(() => showToast('초대 링크가 복사되었습니다!'));
+});
+
+async function sendChat(text) {
+  const r = await emitAsync('sendChat', text);
+  if (!r.success) showToast(r.error);
+  else { $('#chat-input').value = ''; SoundManager.notify(); }
+}
+
+$('#btn-send-chat').addEventListener('click', () => {
+  const text = $('#chat-input').value.trim();
+  if (text) sendChat(text);
+});
+$('#chat-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { const t = $('#chat-input').value.trim(); if (t) sendChat(t); }
+});
+document.querySelectorAll('.emoji-btn').forEach((btn) => {
+  btn.addEventListener('click', () => sendChat(btn.dataset.emoji));
+});
+
+// ── AI 연습 ──
+$('#btn-practice').addEventListener('click', () => {
+  $('#practice-nickname').textContent = nickname || '플레이어';
+  startPractice();
+  showScreen('practice');
+});
+
+$('#btn-leave-practice').addEventListener('click', () => showScreen('lobby'));
+$('#btn-practice-restart').addEventListener('click', () => startPractice());
+$('#ai-difficulty').addEventListener('change', () => startPractice());
+
+function startPractice() {
+  practiceBoard = OmokAI.createBoard();
+  practiceCurrent = 'black';
+  practiceOver = false;
+  practiceBoardEl = $('#practice-board');
+  practiceBoardEl.innerHTML = '';
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      cell.addEventListener('click', onPracticeClick);
+      practiceBoardEl.appendChild(cell);
+    }
+  }
+  $('#practice-status').textContent = '당신의 차례 (흑)';
+  $('#practice-player').classList.add('active');
+  $('#practice-ai').classList.remove('active');
+}
+
+function onPracticeClick(e) {
+  if (practiceOver || practiceCurrent !== 'black') return;
+  const cell = e.currentTarget;
+  const r = +cell.dataset.row, c = +cell.dataset.col;
+  if (practiceBoard[r][c]) return;
+
+  placePracticeStone(r, c, 'black');
+  if (practiceOver) return;
+
+  practiceCurrent = 'white';
+  $('#practice-status').textContent = 'AI 생각 중...';
+  $('#practice-player').classList.remove('active');
+  $('#practice-ai').classList.add('active');
+
+  setTimeout(() => {
+    if (practiceOver) return;
+    const diff = $('#ai-difficulty').value;
+    const [ar, ac] = OmokAI.getMove(practiceBoard, 'white', diff);
+    placePracticeStone(ar, ac, 'white');
+    if (!practiceOver) {
+      practiceCurrent = 'black';
+      $('#practice-status').textContent = '당신의 차례 (흑)';
+      $('#practice-player').classList.add('active');
+      $('#practice-ai').classList.remove('active');
+    }
+  }, 400 + Math.random() * 300);
+}
+
+function placePracticeStone(r, c, color) {
+  practiceBoard[r][c] = color;
+  SoundManager.place();
+  const cell = practiceBoardEl.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+  cell.classList.add('occupied');
+  const el = document.createElement('div');
+  el.className = `stone ${color}`;
+  cell.appendChild(el);
+
+  if (OmokAI.checkWin(practiceBoard, r, c, color)) {
+    practiceOver = true;
+    SoundManager.win();
+    $('#practice-status').textContent = color === 'black' ? '당신이 이겼습니다! 🎉' : 'AI가 이겼습니다.';
+    if (color === 'black') launchConfetti();
+  }
+}
+
+// ── 자동 입장 ──
+setTimeout(async () => {
+  if (nickname && serverAvailable) {
+    const result = await emitAsync('setNickname', nickname);
+    if (result.success) {
+      $('#lobby-nickname').textContent = nickname;
+      showScreen('lobby');
+      checkUrlRoom();
+    }
+  }
+}, 500);
+</script>
 </body>
 </html>
