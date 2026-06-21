@@ -7,9 +7,40 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- 길드 공통 상단바 -->
+  <nav class="guild-nav">
+    <div class="guild-nav-inner">
+      <div class="guild-brand">
+        <span class="guild-icon">🐿️</span>
+        <div>
+          <span class="guild-name">다람쥐구조대</span>
+          <span class="guild-badge">알리사 서버</span>
+        </div>
+      </div>
+      <div class="guild-meta">
+        <span class="guild-leader">길드장 네로롱</span>
+        <span class="guild-mode">오목 멀티플레이</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 서버 미연결 안내 (index.html 직접 열었을 때) -->
+  <div id="server-warning" class="server-warning hidden">
+    <div class="server-warning-box">
+      <h3>⚠️ 서버가 실행되지 않았습니다</h3>
+      <p>실시간 멀티플레이를 하려면 서버를 먼저 켜야 합니다.</p>
+      <ol>
+        <li><code>웹사이트 열기.bat</code> 더블클릭</li>
+        <li>브라우저에서 <strong>http://localhost:3000</strong> 접속</li>
+      </ol>
+      <p class="server-warning-note">AI 연습 모드는 서버 없이도 이용 가능합니다.</p>
+      <button id="btn-dismiss-warning" class="btn btn-secondary btn-sm">AI 연습만 하기</button>
+    </div>
+  </div>
+
   <div class="app">
     <!-- 닉네임 입력 -->
     <section id="screen-nickname" class="screen active">
@@ -26,6 +57,7 @@
           <p id="nickname-error" class="error hidden"></p>
           <button type="submit" class="btn btn-primary">입장하기</button>
         </form>
+        <button id="btn-practice-from-home" class="btn btn-secondary" style="margin-top:0.75rem;width:100%">🤖 AI 연습 (서버 불필요)</button>
       </div>
     </section>
 
@@ -34,7 +66,7 @@
       <header class="header">
         <div class="header-left">
           <span class="logo-mini"><span class="logo-stone black sm"></span><span class="logo-stone white sm"></span></span>
-          <h2>다람쥐구조대 로비</h2>
+          <h2>오목 로비</h2>
           <span class="online-indicator" id="online-count">접속 0명</span>
         </div>
         <div class="header-right">
@@ -46,6 +78,11 @@
       </header>
 
       <div class="lobby-content">
+        <div class="lobby-hero">
+          <h3>🐿️ 길드원들과 오목 한 판!</h3>
+          <p>방을 만들거나 코드로 참가하세요. 가득 찬 방은 관전도 가능합니다.</p>
+        </div>
+
         <div class="lobby-actions">
           <div class="action-row">
             <button id="btn-create-room" class="btn btn-primary btn-lg">
@@ -227,8 +264,9 @@
   <div id="toast" class="toast hidden"></div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/sounds.js"></script>
-  <script src="/js/ai.js"></script>
-  <script src="/js/client.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/sounds.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/client.js"></script>
 </body>
 </html>

@@ -1,4 +1,68 @@
-const socket = io({ reconnection: true, reconnectionAttempts: 20 });
+let socket = null;
+let serverAvailable = false;
+
+function initSocket() {
+  if (typeof io === 'undefined') return false;
+  try {
+    socket = io({ reconnection: true, reconnectionAttempts: 20 });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function emitAsync(event, data) {
+  return new Promise((resolve) => {
+    if (!socket) {
+      resolve({ success: false, error: '서버에 연결되지 않았습니다.' });
+      return;
+    }
+    socket.emit(event, data, resolve);
+  });
+}
+
+function checkServerConnection() {
+  const hasSocketLib = typeof io !== 'undefined';
+  const isFileProtocol = location.protocol === 'file:';
+
+  if (!hasSocketLib || isFileProtocol) {
+    $('#server-warning')?.classList.remove('hidden');
+    return false;
+  }
+
+  if (!socket) initSocket();
+  bindSocketEvents();
+
+  let checked = false;
+  const timeout = setTimeout(() => {
+    if (!checked && !serverAvailable) {
+      $('#server-warning')?.classList.remove('hidden');
+    }
+  }, 3000);
+
+  socket.on('connect', () => {
+    checked = true;
+    serverAvailable = true;
+    clearTimeout(timeout);
+    $('#server-warning')?.classList.add('hidden');
+    updateConnStatus(true);
+    if (nickname) emitAsync('setNickname', nickname);
+  });
+
+  socket.on('disconnect', () => {
+    serverAvailable = false;
+    updateConnStatus(false);
+  });
+
+  if (socket.connected) {
+    checked = true;
+    serverAvailable = true;
+    clearTimeout(timeout);
+    updateConnStatus(true);
+  }
+
+  return true;
+}
 
 const BOARD_SIZE = 15;
 const COL_LABELS = 'ABCDEFGHJKLMNO'.split('');
@@ -41,10 +105,6 @@ function showToast(message, duration = 3000) {
     toast.classList.remove('show');
     setTimeout(() => toast.classList.add('hidden'), 300);
   }, duration);
-}
-
-function emitAsync(event, data) {
-  return new Promise((resolve) => socket.emit(event, data, resolve));
 }
 
 function updateConnStatus(connected) {
@@ -107,6 +167,11 @@ if (nickname) nicknameInput.value = nickname;
 
 nicknameForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!serverAvailable) {
+    $('#server-warning')?.classList.remove('hidden');
+    SoundManager.error();
+    return;
+  }
   const result = await emitAsync('setNickname', nicknameInput.value.trim());
   if (!result.success) {
     $('#nickname-error').textContent = result.error;
@@ -120,6 +185,21 @@ nicknameForm.addEventListener('submit', async (e) => {
   $('#lobby-nickname').textContent = nickname;
   showScreen('lobby');
   checkUrlRoom();
+});
+
+$('#btn-practice-from-home')?.addEventListener('click', () => {
+  nickname = nicknameInput.value.trim() || nickname || '플레이어';
+  $('#practice-nickname').textContent = nickname;
+  startPractice();
+  showScreen('practice');
+});
+
+$('#btn-dismiss-warning')?.addEventListener('click', () => {
+  $('#server-warning')?.classList.add('hidden');
+  nickname = nicknameInput.value.trim() || '플레이어';
+  $('#practice-nickname').textContent = nickname;
+  startPractice();
+  showScreen('practice');
 });
 
 $('#btn-logout').addEventListener('click', () => {
@@ -201,16 +281,28 @@ function renderRoomList(rooms) {
   });
 }
 
-socket.on('roomList', renderRoomList);
-socket.on('onlineCount', (n) => { $('#online-count').textContent = `접속 ${n}명`; });
+let socketEventsBound = false;
+
+function bindSocketEvents() {
+  if (!socket || socketEventsBound) return;
+  socketEventsBound = true;
+  socket.on('roomList', renderRoomList);
+  socket.on('onlineCount', (n) => { $('#online-count').textContent = `접속 ${n}명`; });
+  socket.on('roomUpdate', (room) => {
+    if (currentRoom && room.code === currentRoom.code) renderGame(room);
+  });
+  socket.on('kicked', ({ reason }) => {
+    showToast(reason);
+    currentRoom = null;
+    boardEl = null;
+    showScreen('lobby');
+  });
+}
 
 // ── 연결 ──
-socket.on('connect', () => {
-  updateConnStatus(true);
-  if (nickname) emitAsync('setNickname', nickname);
-});
-socket.on('disconnect', () => updateConnStatus(false));
-updateConnStatus(socket.connected);
+bindSocketEvents();
+checkServerConnection();
+updateConnStatus(false);
 
 $('#btn-sound-toggle').addEventListener('click', () => {
   const on = SoundManager.toggle();
@@ -467,17 +559,6 @@ function escapeHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-socket.on('roomUpdate', (room) => {
-  if (currentRoom && room.code === currentRoom.code) renderGame(room);
-});
-
-socket.on('kicked', ({ reason }) => {
-  showToast(reason);
-  currentRoom = null;
-  boardEl = null;
-  showScreen('lobby');
-});
-
 // ── 게임 액션 ──
 $('#btn-ready').addEventListener('click', async () => {
   const ready = !currentRoom?.ready[currentRoom.role];
@@ -640,8 +721,8 @@ function placePracticeStone(r, c, color) {
 }
 
 // ── 자동 입장 ──
-(async () => {
-  if (nickname) {
+setTimeout(async () => {
+  if (nickname && serverAvailable) {
     const result = await emitAsync('setNickname', nickname);
     if (result.success) {
       $('#lobby-nickname').textContent = nickname;
@@ -649,4 +730,4 @@ function placePracticeStone(r, c, color) {
       checkUrlRoom();
     }
   }
-})();
+}, 500);

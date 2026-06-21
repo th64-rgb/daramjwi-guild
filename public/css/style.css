@@ -15,6 +15,9 @@
   --text-muted: #9a8f82;
   --accent: #e8a838;
   --accent-hover: #f5bc4a;
+  --guild: #166534;
+  --guild-light: #22c55e;
+  --guild-bg: #0f3d24;
   --black-stone: #1a1a1a;
   --white-stone: #f5f0e8;
   --border: #3d3529;
@@ -22,6 +25,7 @@
   --error: #e74c3c;
   --radius: 12px;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --nav-h: 56px;
 }
 
 html, body {
@@ -34,13 +38,120 @@ body {
   line-height: 1.5;
   overflow-x: hidden;
   background:
-    radial-gradient(ellipse at 20% 0%, rgba(232,168,56,0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(92,184,92,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 0%, rgba(34,197,94,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(232,168,56,0.05) 0%, transparent 50%),
     var(--bg);
 }
 
+/* 길드 상단바 */
+.guild-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: linear-gradient(135deg, var(--guild-bg) 0%, var(--guild) 100%);
+  border-bottom: 1px solid rgba(34,197,94,0.3);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.guild-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.6rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.guild-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.guild-icon { font-size: 1.75rem; line-height: 1; }
+
+.guild-name {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #fff;
+  display: block;
+  line-height: 1.2;
+}
+
+.guild-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  background: rgba(255,255,255,0.15);
+  color: #bbf7d0;
+  border-radius: 10px;
+  margin-top: 0.1rem;
+}
+
+.guild-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  font-size: 0.75rem;
+  color: #bbf7d0;
+}
+
+.guild-leader { font-weight: 600; }
+.guild-mode { opacity: 0.85; }
+
+/* 서버 미연결 안내 */
+.server-warning {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.server-warning-box {
+  background: var(--bg-card);
+  border: 1px solid var(--guild-light);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.server-warning-box h3 {
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.server-warning-box p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem; }
+
+.server-warning-box ol {
+  margin: 0.75rem 0 1rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.server-warning-box code {
+  background: var(--border);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.server-warning-note {
+  font-size: 0.8rem !important;
+  font-style: italic;
+}
+
 .app {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--nav-h));
 }
 
 .screen {
@@ -169,14 +280,15 @@ input[type="text"]::placeholder {
 }
 
 .btn-primary {
-  background: var(--accent);
-  color: #1a1612;
+  background: linear-gradient(135deg, var(--guild-light), var(--guild));
+  color: #fff;
   width: 100%;
   margin-top: 1.25rem;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
+  background: linear-gradient(135deg, #4ade80, #15803d);
   transform: translateY(-1px);
 }
 
@@ -311,6 +423,25 @@ input[type="text"]::placeholder {
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
+}
+
+.lobby-hero {
+  background: linear-gradient(135deg, rgba(22,101,52,0.25), rgba(37,32,24,0.8));
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.lobby-hero h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.35rem;
+  color: var(--guild-light);
+}
+
+.lobby-hero p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }
 
 .lobby-actions {
@@ -927,6 +1058,11 @@ input[type="text"]::placeholder {
     width: 100%;
     max-width: 400px;
   }
+}
+
+@media (max-width: 600px) {
+  .guild-meta { display: none; }
+  .guild-name { font-size: 1rem; }
 }
 
 @media (max-width: 500px) {
