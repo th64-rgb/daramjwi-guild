@@ -3,1109 +3,232 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>다람쥐구조대 | 마비노기 모바일 길드</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Firebase (for shared member data across visitors) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <style>
-    body { font-family: 'Noto Sans KR', system-ui, sans-serif; }
-    .mobi-card { transition: all 0.2s ease; }
-    .mobi-card:hover { transform: translateY(-1px); }
-    .timer { font-variant-numeric: tabular-nums; font-weight: 800; }
-    .section-title { font-weight: 700; color: #374151; }
-  </style>
+  <title>다람쥐구조대 · 오목</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
-<body class="bg-[#f8f7f0] text-slate-800">
-  <!-- Navbar -->
-  <nav class="sticky top-0 z-50 bg-white border-b">
-    <div class="max-w-screen-xl mx-auto px-5">
-      <div class="flex h-14 items-center justify-between">
-        <!-- Logo -->
-        <div class="flex items-center gap-x-3">
-          <div class="w-9 h-9 bg-[#166534] rounded-2xl flex items-center justify-center text-white text-2xl">🐿️</div>
-          <div>
-            <div class="font-extrabold text-2xl tracking-tighter text-[#166534]">다람쥐구조대</div>
-            <div class="text-[10px] -mt-1 text-[#854d0e] font-bold">MABINOGI MOBILE GUILD</div>
+<body>
+  <div class="app">
+    <!-- 닉네임 입력 -->
+    <section id="screen-nickname" class="screen active">
+      <div class="card card-center">
+        <div class="logo">
+          <span class="logo-stone black"></span>
+          <span class="logo-stone white"></span>
+        </div>
+        <h1>다람쥐구조대</h1>
+        <p class="subtitle">길드 오목 · 실시간 멀티플레이 · 관전 · AI 연습</p>
+        <form id="nickname-form">
+          <label for="nickname-input">닉네임</label>
+          <input type="text" id="nickname-input" placeholder="2~12자 닉네임 입력" maxlength="12" autocomplete="off" required>
+          <p id="nickname-error" class="error hidden"></p>
+          <button type="submit" class="btn btn-primary">입장하기</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 로비 -->
+    <section id="screen-lobby" class="screen">
+      <header class="header">
+        <div class="header-left">
+          <span class="logo-mini"><span class="logo-stone black sm"></span><span class="logo-stone white sm"></span></span>
+          <h2>다람쥐구조대 로비</h2>
+          <span class="online-indicator" id="online-count">접속 0명</span>
+        </div>
+        <div class="header-right">
+          <span class="conn-status" id="conn-status" title="연결 상태">●</span>
+          <button id="btn-sound-toggle" class="btn btn-ghost btn-sm" title="효과음">🔊</button>
+          <span class="nickname-badge" id="lobby-nickname"></span>
+          <button id="btn-logout" class="btn btn-ghost btn-sm">닉네임 변경</button>
+        </div>
+      </header>
+
+      <div class="lobby-content">
+        <div class="lobby-actions">
+          <div class="action-row">
+            <button id="btn-create-room" class="btn btn-primary btn-lg">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              새 방 만들기
+            </button>
+            <button id="btn-practice" class="btn btn-secondary btn-lg">🤖 AI 연습</button>
+          </div>
+          <div class="join-form">
+            <input type="text" id="join-code-input" placeholder="방 코드 입력" maxlength="6" autocomplete="off">
+            <button id="btn-join-room" class="btn btn-secondary">참가</button>
+            <button id="btn-spectate-room" class="btn btn-ghost">관전</button>
+          </div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="private-room-check">
+            비공개 방 (목록에 안 보임)
+          </label>
+        </div>
+
+        <div class="room-list-section">
+          <h3>열린 방 <span id="room-count" class="badge">0</span></h3>
+          <div id="room-list" class="room-list">
+            <p class="empty-state">열린 방이 없습니다. 새 방을 만들어보세요!</p>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="flex items-center gap-x-2" id="nav-right">
-          <!-- JS will populate login state here -->
+    <!-- 게임 화면 -->
+    <section id="screen-game" class="screen">
+      <header class="header">
+        <div class="header-left">
+          <button id="btn-leave-room" class="btn btn-ghost btn-sm">← 나가기</button>
+          <span class="room-code-display">방 코드: <strong id="game-room-code"></strong></span>
+          <button id="btn-copy-code" class="btn btn-ghost btn-sm" title="코드 복사">📋</button>
+          <button id="btn-share-link" class="btn btn-ghost btn-sm" title="초대 링크">🔗</button>
         </div>
-      </div>
-    </div>
-  </nav>
+        <div class="header-right">
+          <span class="conn-status" id="conn-status-game">●</span>
+          <span class="nickname-badge" id="game-nickname"></span>
+        </div>
+      </header>
 
-  <!-- Not logged in state (hidden by default in skip mode) -->
-  <div id="not-logged-in" class="hidden max-w-screen-xl mx-auto px-5 pt-12 pb-20">
-    <div class="max-w-xl mx-auto text-center">
-      <div class="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-1 rounded-full text-sm font-semibold mb-4">
-        알리사 서버 • 길드원 전용
-      </div>
-      
-      <h1 class="text-5xl font-extrabold tracking-tighter text-[#166534]">다람쥐구조대</h1>
-      <p class="mt-4 text-xl text-slate-600">작은 손으로 큰 모험을 함께</p>
-
-      <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-        <button id="static-login-btn" 
-                class="flex-1 sm:flex-none px-8 py-3 bg-white border border-[#166534] text-[#166534] font-bold rounded-3xl hover:bg-[#f8faf5]">
-          로그인
-        </button>
-        <button id="static-signup-btn" 
-                class="flex-1 sm:flex-none px-8 py-3 bg-[#166534] text-white font-bold rounded-3xl hover:bg-[#14532d]">
-          회원가입
-        </button>
-      </div>
-
-      <div class="mt-8 text-sm text-slate-500">
-        아이디 = 닉네임<br>
-        비밀번호는 본인이 직접 설정합니다
-      </div>
-    </div>
-  </div>
-
-  <!-- Main Content (always shown in skip mode) -->
-  <div id="main-content" class="hidden max-w-screen-xl mx-auto px-5 pt-8 pb-16">
-    <!-- Welcome bar -->
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <div class="text-sm text-slate-500">환영합니다,</div>
-        <div id="welcome-user" class="text-2xl font-extrabold text-[#166534]"></div>
-      </div>
-      <div class="text-xs px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full font-semibold">알리사 서버</div>
-    </div>
-
-    <!-- Master Tabs (only for 신궁상폐) -->
-    <div id="master-tabs" class="hidden mb-4">
-      <div class="flex gap-2 border-b pb-1">
-        <button onclick="switchTab('main')" id="tab-main"
-                class="px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-[#166534] text-[#166534]">
-          길드 정보
-        </button>
-        <button onclick="switchTab('admin')" id="tab-admin"
-                class="px-4 py-2 text-sm font-semibold rounded-t-lg hover:bg-slate-100">
-          가입자 현황
-        </button>
-      </div>
-    </div>
-
-    <!-- Main View (timers + public member list) -->
-    <div id="main-view">
-      <!-- Server Timers -->
-      <div class="mb-8">
-        <div class="section-title mb-3 px-1">서버 타이머 (알리사 서버)</div>
-        <div class="grid md:grid-cols-3 gap-4">
-          <!-- 소환의 결계 -->
-          <div class="mobi-card bg-white border rounded-3xl p-5">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-2xl">🔮</span>
-              <div class="font-bold">소환의 결계</div>
+      <div class="game-layout">
+        <aside class="sidebar sidebar-left">
+          <div class="player-card" id="player-black">
+            <div class="player-stone black"></div>
+            <div class="player-info">
+              <span class="player-label">흑</span>
+              <span class="player-name" id="name-black">대기 중...</span>
+              <span class="player-timer hidden" id="timer-black"></span>
             </div>
-            <div class="text-xs text-slate-500 mb-1">다음 출현까지</div>
-            <div id="summon-timer" class="timer text-4xl font-extrabold text-[#166534]">04:12:33</div>
-            <div class="mt-2 text-xs text-emerald-600">매일 20:00 기준 갱신</div>
+            <span class="ready-tag hidden" id="ready-black">준비</span>
+            <span class="turn-indicator hidden" id="turn-black">●</span>
+            <span class="offline-tag hidden" id="offline-black">오프라인</span>
           </div>
-
-          <!-- 어비스 구멍 -->
-          <div class="mobi-card bg-white border rounded-3xl p-5">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-2xl">🕳️</span>
-              <div class="font-bold">어비스 구멍</div>
+          <div class="player-card" id="player-white">
+            <div class="player-stone white"></div>
+            <div class="player-info">
+              <span class="player-label">백</span>
+              <span class="player-name" id="name-white">대기 중...</span>
+              <span class="player-timer hidden" id="timer-white"></span>
             </div>
-            <div class="text-xs text-slate-500 mb-1">다음 오픈</div>
-            <div id="abyss-timer" class="timer text-4xl font-extrabold text-[#166534]">18:45:00</div>
-            <div class="mt-3 text-xs">
-              <div class="flex justify-between text-slate-600">
-                <span>오늘 20:00</span>
-                <span class="font-medium">일반 어비스</span>
-              </div>
+            <span class="ready-tag hidden" id="ready-white">준비</span>
+            <span class="turn-indicator hidden" id="turn-white">●</span>
+            <span class="offline-tag hidden" id="offline-white">오프라인</span>
+          </div>
+
+          <div class="status-box" id="game-status">플레이어를 기다리는 중...</div>
+
+          <div class="action-panel" id="game-actions">
+            <button id="btn-ready" class="btn btn-primary hidden">준비</button>
+            <button id="btn-switch-player" class="btn btn-secondary hidden">플레이어로 참가</button>
+            <button id="btn-undo" class="btn btn-ghost btn-sm hidden">무르기 요청</button>
+            <button id="btn-resign" class="btn btn-ghost btn-sm hidden">기권</button>
+            <button id="btn-draw" class="btn btn-ghost btn-sm hidden">무승부 제안</button>
+            <button id="btn-rematch" class="btn btn-secondary hidden">재대결</button>
+          </div>
+
+          <div id="request-panel" class="request-panel hidden">
+            <p id="request-text"></p>
+            <div class="request-buttons">
+              <button id="btn-accept-request" class="btn btn-primary btn-sm">수락</button>
+              <button id="btn-decline-request" class="btn btn-ghost btn-sm">거절</button>
             </div>
           </div>
+        </aside>
 
-          <!-- 심층 구멍 -->
-          <div class="mobi-card bg-white border rounded-3xl p-5">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-2xl">🌑</span>
-              <div class="font-bold">심층 구멍</div>
+        <main class="board-area">
+          <div class="board-wrapper">
+            <div class="board-labels board-labels-top" id="board-labels-top"></div>
+            <div class="board-row">
+              <div class="board-labels board-labels-left" id="board-labels-left"></div>
+              <div id="board" class="board"></div>
             </div>
-            <div class="text-xs text-slate-500 mb-1">다음 리셋까지</div>
-            <div id="deep-timer" class="timer text-4xl font-extrabold text-[#166534]">15:22:11</div>
-            <div class="mt-2 text-xs text-slate-600">매주 월요일 초기화</div>
           </div>
-        </div>
-      </div>
+        </main>
 
-      <!-- 길드원 목록 (grade aware) -->
-      <div class="mobi-card bg-white border rounded-3xl p-6 mb-8">
-        <div class="flex items-center justify-between mb-4">
-          <div class="font-bold text-lg">현재 가입된 길드원</div>
-          <div class="text-xs text-slate-500" id="member-count"></div>
-        </div>
-        <div id="member-list" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-          <!-- Populated by JS -->
-        </div>
-        <div class="text-xs text-center mt-4 text-slate-400">
-          <span id="member-list-note">회원가입한 길드원만 표시됩니다</span>
-        </div>
-      </div>
-
-      <!-- Simple Guild Info -->
-      <div class="bg-white border rounded-3xl p-6 text-sm">
-        <div class="font-bold mb-2">다람쥐구조대</div>
-        <div class="text-slate-600">
-          알리사 서버에서 활동하는 따뜻한 길드입니다.<br>
-          초보자부터 고인물까지 서로 도와가며 모험합니다.
-        </div>
-        <div class="mt-3 text-xs">
-          길드장: 신궁상폐<br>
-          가입 문의는 로그인 후 길드 채팅에서 해주세요.
-        </div>
-      </div>
-    </div>
-
-    <!-- Admin View (마스터 전용 가입자 현황) -->
-    <div id="admin-view" class="hidden">
-      <div class="mobi-card bg-white border rounded-3xl p-6 mb-8">
-        <div class="font-bold text-lg mb-4 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            📊 가입자 현황
-            <span class="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-semibold">마스터 전용</span>
-            <button onclick="renderAdminView()" class="text-xs px-2 py-0.5 border rounded hover:bg-slate-100">🔄 새로고침</button>
+        <aside class="sidebar sidebar-right">
+          <div class="move-history-panel">
+            <h4>기보 <span id="move-count" class="badge">0</span></h4>
+            <ol id="move-history" class="move-history">
+              <li class="empty">아직 수가 없습니다</li>
+            </ol>
           </div>
-          <button onclick="showSignupModal()" 
-                  class="text-xs px-3 py-1 bg-[#166534] text-white rounded-2xl hover:bg-[#14532d]">
-            + 새 회원 가입
-          </button>
-        </div>
 
-        <!-- Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6" id="admin-stats">
-          <!-- JS populated -->
-        </div>
+          <div class="spectator-panel">
+            <h4>관전자 <span id="spectator-count" class="badge">0</span></h4>
+            <ul id="spectator-list" class="spectator-list">
+              <li class="empty">관전자 없음</li>
+            </ul>
+          </div>
 
-        <!-- Full user table -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b text-left text-slate-500">
-                <th class="py-2">닉네임</th>
-                <th class="py-2">등급</th>
-                <th class="py-2">가입일</th>
-                <th class="py-2">관리</th>
-              </tr>
-            </thead>
-            <tbody id="admin-user-table" class="divide-y">
-              <!-- JS populated rows -->
-            </tbody>
-          </table>
-        </div>
+          <div class="role-badge" id="role-badge">관전 중</div>
 
-        <div class="mt-4 text-xs text-slate-500">
-          최고등급(운영진)은 이곳에서 모든 가입자의 등급을 확인하고 변경할 수 있습니다.
-        </div>
+          <div class="chat-panel">
+            <h4>채팅</h4>
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-row">
+              <input type="text" id="chat-input" placeholder="메시지 입력..." maxlength="200" autocomplete="off">
+              <button id="btn-send-chat" class="btn btn-secondary btn-sm">전송</button>
+            </div>
+            <div class="emoji-row">
+              <button class="emoji-btn" data-emoji="👍">👍</button>
+              <button class="emoji-btn" data-emoji="😂">😂</button>
+              <button class="emoji-btn" data-emoji="🔥">🔥</button>
+              <button class="emoji-btn" data-emoji="👏">👏</button>
+              <button class="emoji-btn" data-emoji="😱">😱</button>
+            </div>
+          </div>
+        </aside>
       </div>
-    </div>
+    </section>
+
+    <!-- AI 연습 -->
+    <section id="screen-practice" class="screen">
+      <header class="header">
+        <div class="header-left">
+          <button id="btn-leave-practice" class="btn btn-ghost btn-sm">← 로비로</button>
+          <h2>AI 연습</h2>
+        </div>
+        <div class="header-right">
+          <select id="ai-difficulty" class="select-sm">
+            <option value="easy">쉬움</option>
+            <option value="normal" selected>보통</option>
+            <option value="hard">어려움</option>
+          </select>
+          <button id="btn-practice-restart" class="btn btn-secondary btn-sm">다시 시작</button>
+        </div>
+      </header>
+      <div class="game-layout practice-layout">
+        <aside class="sidebar sidebar-left">
+          <div class="player-card active" id="practice-player">
+            <div class="player-stone black"></div>
+            <div class="player-info">
+              <span class="player-label">나 (흑)</span>
+              <span class="player-name" id="practice-nickname">플레이어</span>
+            </div>
+          </div>
+          <div class="player-card" id="practice-ai">
+            <div class="player-stone white"></div>
+            <div class="player-info">
+              <span class="player-label">AI (백)</span>
+              <span class="player-name">오목봇</span>
+            </div>
+          </div>
+          <div class="status-box" id="practice-status">당신의 차례 (흑)</div>
+        </aside>
+        <main class="board-area">
+          <div class="board-wrapper">
+            <div id="practice-board" class="board"></div>
+          </div>
+        </main>
+      </div>
+    </section>
   </div>
 
-  <!-- Login Modal -->
-  <div id="login-modal" onclick="if (event.target.id==='login-modal') closeModals()" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-5">
-    <div onclick="event.stopImmediatePropagation()" class="bg-white rounded-3xl w-full max-w-sm p-7">
-      <div class="font-extrabold text-2xl mb-1">로그인</div>
-      <div class="text-sm text-slate-500 mb-5">아이디(닉네임)와 비밀번호를 입력하세요</div>
-
-      <form id="login-form">
-        <div class="space-y-4">
-          <div>
-            <label class="text-xs font-semibold text-slate-500">아이디 (닉네임)</label>
-            <input id="login-id" type="text" required class="mt-1 w-full border px-4 py-3 rounded-2xl text-sm" placeholder="예: 도토리대장">
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-slate-500">비밀번호</label>
-            <input id="login-pw" type="password" required class="mt-1 w-full border px-4 py-3 rounded-2xl text-sm" placeholder="비밀번호">
-          </div>
-        </div>
-        <button type="submit" class="mt-5 w-full bg-[#166534] text-white font-bold py-3 rounded-3xl">로그인</button>
-      </form>
-
-      <div class="text-center mt-4 text-sm">
-        계정이 없으신가요? <button onclick="closeModals(); showSignupModal()" class="text-[#166534] font-semibold">회원가입</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Signup Modal -->
-  <div id="signup-modal" onclick="if (event.target.id==='signup-modal') closeModals()" class="hidden fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-5">
-    <div onclick="event.stopImmediatePropagation()" class="bg-white rounded-3xl w-full max-w-sm p-7">
-      <div class="font-extrabold text-2xl mb-1">회원가입</div>
-      <div class="text-sm text-slate-500 mb-5">아이디는 닉네임으로 사용됩니다</div>
-
-      <form id="signup-form">
-        <div class="space-y-4">
-          <div>
-            <label class="text-xs font-semibold text-slate-500">아이디 (닉네임)</label>
-            <input id="signup-id" type="text" required minlength="2" maxlength="12" 
-                   class="mt-1 w-full border px-4 py-3 rounded-2xl text-sm" placeholder="사용할 닉네임 (아이디)">
-            <div class="text-[10px] text-slate-400 mt-1">2~12자, 특수문자 제외 권장</div>
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-slate-500">비밀번호</label>
-            <input id="signup-pw" type="password" required minlength="4" 
-                   class="mt-1 w-full border px-4 py-3 rounded-2xl text-sm" placeholder="비밀번호 설정">
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-slate-500">비밀번호 확인</label>
-            <input id="signup-pw2" type="password" required minlength="4" 
-                   class="mt-1 w-full border px-4 py-3 rounded-2xl text-sm" placeholder="비밀번호 다시 입력">
-          </div>
-        </div>
-
-        <button type="submit" class="mt-5 w-full bg-[#166534] text-white font-bold py-3 rounded-3xl">가입하기</button>
-      </form>
-
-      <div class="text-center mt-4 text-sm">
-        이미 계정이 있으신가요? <button onclick="closeModals(); showLoginModal()" class="text-[#166534] font-semibold">로그인</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-[#166534] text-white px-6 py-3 rounded-3xl text-sm flex items-center gap-2 shadow-xl">
-    <span id="toast-text"></span>
-  </div>
-
-  <script>
-    // ==================== FIREBASE CONFIG (YOU MUST REPLACE THIS) ====================
-    // 1. Go to https://console.firebase.google.com
-    // 2. Create a new project
-    // 3. Enable Firestore Database (start in test mode)
-    // 4. Project Settings → General → Your apps → Add Web app
-    // 5. Copy the config object below and replace this one
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-
-    let db;
-    let adminUnsubscribe = null;
-    let memberListUnsubscribe = null;
-
-    // Simple local cache for fast initial render
-    function getCachedMembers() {
-      try {
-        const raw = localStorage.getItem('daramjwi_members_cache');
-        return raw ? JSON.parse(raw) : [];
-      } catch { return []; }
-    }
-    function saveCachedMembers(users) {
-      try {
-        localStorage.setItem('daramjwi_members_cache', JSON.stringify(users));
-      } catch {}
-    }
-
-    function initFirebase() {
-      try {
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-        console.log("Firebase initialized");
-      } catch (e) {
-        console.error("Firebase init failed. Make sure you replaced the config.", e);
-        // Fallback will not work for shared data
-      }
-    }
-
-    // ==================== AUTH SYSTEM (using Firestore for shared multi-user data) ====================
-    const CURRENT_USER_KEY = 'daramjwi_current_user';
-
-    function getCurrentUser() {
-      return localStorage.getItem(CURRENT_USER_KEY);
-    }
-
-    function setCurrentUser(id) {
-      localStorage.setItem(CURRENT_USER_KEY, id);
-    }
-
-    function clearCurrentUser() {
-      localStorage.removeItem(CURRENT_USER_KEY);
-    }
-
-    async function loadUsers() {
-      if (db) {
-        try {
-          const snapshot = await db.collection('guild_members').get();
-          const users = [];
-          snapshot.forEach(doc => {
-            users.push({ id: doc.id, ...doc.data() });
-          });
-          return users;
-        } catch (e) {
-          console.error("Failed to load users from Firestore", e);
-          return [];
-        }
-      } else {
-        // Fallback to localStorage for development / if Firebase not configured
-        const raw = localStorage.getItem('daramjwi_users_fallback');
-        let users = raw ? JSON.parse(raw) : [];
-        // Ensure master in fallback
-        const masterId = '신궁상폐';
-        const masterPw = 'qlqjs6491!';
-        if (!users.some(u => u.id === masterId)) {
-          users.push({ id: masterId, password: masterPw, grade: 3, joined: new Date().toISOString() });
-          localStorage.setItem('daramjwi_users_fallback', JSON.stringify(users));
-        }
-        return users;
-      }
-    }
-
-    async function signup(id, password) {
-      if (db) {
-        try {
-          const existing = await db.collection('guild_members').doc(id).get();
-          if (existing.exists) {
-            return { success: false, message: '이미 사용 중인 아이디입니다.' };
-          }
-          
-          await db.collection('guild_members').doc(id).set({
-            password: password,
-            grade: 1,
-            joined: new Date().toISOString()
-          });
-          
-          return { success: true };
-        } catch (e) {
-          console.error(e);
-          return { success: false, message: '가입 중 오류가 발생했습니다.' };
-        }
-      } else {
-        // Fallback
-        const users = await loadUsers();
-        if (users.some(u => u.id.toLowerCase() === id.toLowerCase())) {
-          return { success: false, message: '이미 사용 중인 아이디입니다.' };
-        }
-        users.push({
-          id: id,
-          password: password,
-          grade: 1,
-          joined: new Date().toISOString()
-        });
-        localStorage.setItem('daramjwi_users_fallback', JSON.stringify(users));
-        return { success: true };
-      }
-    }
-
-    async function login(id, password) {
-      if (db) {
-        try {
-          const doc = await db.collection('guild_members').doc(id).get();
-          if (!doc.exists) {
-            return { success: false, message: '존재하지 않는 아이디입니다.' };
-          }
-          
-          const data = doc.data();
-          if (data.password !== password) {
-            return { success: false, message: '비밀번호가 틀렸습니다.' };
-          }
-          
-          setCurrentUser(id);
-          return { success: true, user: id };
-        } catch (e) {
-          console.error(e);
-          return { success: false, message: '로그인 중 오류가 발생했습니다.' };
-        }
-      } else {
-        // Fallback
-        const users = await loadUsers();
-        const user = users.find(u => u.id.toLowerCase() === id.toLowerCase());
-        if (!user) {
-          return { success: false, message: '존재하지 않는 아이디입니다.' };
-        }
-        if (user.password !== password) {
-          return { success: false, message: '비밀번호가 틀렸습니다.' };
-        }
-        setCurrentUser(id);
-        return { success: true, user: id };
-      }
-    }
-
-    async function getCurrentUserGrade() {
-      const id = getCurrentUser();
-      if (!id) return 0;
-      if (db) {
-        try {
-          const doc = await db.collection('guild_members').doc(id).get();
-          if (!doc.exists) return 0;
-          return doc.data().grade || 1;
-        } catch (e) {
-          return 0;
-        }
-      } else {
-        const users = await loadUsers();
-        const user = users.find(u => u.id.toLowerCase() === id.toLowerCase());
-        return user ? (user.grade || 1) : 0;
-      }
-    }
-
-    async function updateUserGrade(targetId, newGrade) {
-      const currentId = getCurrentUser();
-      const currentGrade = await getCurrentUserGrade();
-      
-      if (currentGrade < 3) {
-        return { success: false, message: '등급 변경 권한이 없습니다.' };
-      }
-      
-      if (db) {
-        try {
-          await db.collection('guild_members').doc(targetId).update({
-            grade: parseInt(newGrade)
-          });
-          return { success: true };
-        } catch (e) {
-          console.error(e);
-          return { success: false, message: '등급 변경 실패' };
-        }
-      } else {
-        // Fallback
-        const users = await loadUsers();
-        const target = users.find(u => u.id.toLowerCase() === targetId.toLowerCase());
-        if (!target) return { success: false, message: '대상 사용자를 찾을 수 없습니다.' };
-        target.grade = parseInt(newGrade);
-        localStorage.setItem('daramjwi_users_fallback', JSON.stringify(users));
-        return { success: true };
-      }
-    }
-
-    function getGradeName(grade) {
-      if (grade === 3) return '운영진';
-      if (grade === 2) return '정회원';
-      return '신입';
-    }
-
-    async function ensureMasterAccount() {
-      const masterId = '신궁상폐';
-      const masterPw = 'qlqjs6491!';
-      
-      if (db) {
-        try {
-          const doc = await db.collection('guild_members').doc(masterId).get();
-          if (!doc.exists) {
-            await db.collection('guild_members').doc(masterId).set({
-              password: masterPw,
-              grade: 3,
-              joined: new Date().toISOString()
-            });
-            console.log("Master account created in Firestore");
-          }
-        } catch (e) {
-          console.error("Failed to ensure master account", e);
-        }
-      } else {
-        // Fallback
-        const users = await loadUsers();
-        if (!users.some(u => u.id === masterId)) {
-          users.push({ id: masterId, password: masterPw, grade: 3, joined: new Date().toISOString() });
-          localStorage.setItem('daramjwi_users_fallback', JSON.stringify(users));
-        }
-      }
-    }
-
-    // ==================== UI STATE ====================
-    function updateNav() {
-      const navRight = document.getElementById('nav-right');
-      const currentUser = getCurrentUser();
-      
-      if (currentUser) {
-        navRight.innerHTML = `
-          <div class="flex items-center gap-x-2 text-sm">
-            <span class="hidden sm:inline px-3 py-1 bg-emerald-100 text-emerald-700 rounded-2xl font-semibold">${currentUser}</span>
-            <button id="nav-logout-btn" class="px-4 py-1.5 text-sm font-semibold border rounded-2xl hover:bg-slate-50">로그아웃</button>
-          </div>
-        `;
-        const logoutBtn = document.getElementById('nav-logout-btn');
-        if (logoutBtn) logoutBtn.addEventListener('click', logout);
-      } else {
-        navRight.innerHTML = `
-          <button id="nav-login-btn" class="px-4 py-1.5 text-sm font-semibold border rounded-2xl hover:bg-slate-50">로그인</button>
-          <button id="nav-signup-btn" class="px-4 py-1.5 bg-[#166534] text-white font-semibold rounded-2xl text-sm">회원가입</button>
-        `;
-        const loginBtn = document.getElementById('nav-login-btn');
-        if (loginBtn) loginBtn.addEventListener('click', showLoginModal);
-        const signupBtn = document.getElementById('nav-signup-btn');
-        if (signupBtn) signupBtn.addEventListener('click', showSignupModal);
-      }
-    }
-
-    async function showMainContent(show) {
-      const notLogged = document.getElementById('not-logged-in');
-      const main = document.getElementById('main-content');
-      
-      if (show) {
-        notLogged.classList.add('hidden');
-        main.classList.remove('hidden');
-        document.getElementById('welcome-user').textContent = getCurrentUser();
-        
-        const currentId = getCurrentUser();
-        const isMaster = currentId === '신궁상폐';
-        
-        // Show/hide master tabs
-        const tabs = document.getElementById('master-tabs');
-        if (tabs) tabs.classList.toggle('hidden', !isMaster);
-        
-        const adminView = document.getElementById('admin-view');
-        const mainView = document.getElementById('main-view');
-        
-        if (isMaster) {
-          switchTab('main');  // shows tabs effect + starts render (async)
-        } else {
-          if (mainView) mainView.classList.remove('hidden');
-          if (adminView) adminView.classList.add('hidden');
-          renderMemberList();
-        }
-      } else {
-        notLogged.classList.remove('hidden');
-        main.classList.add('hidden');
-      }
-    }
-
-    let currentTab = 'main';
-
-    async function switchTab(tab) {
-      currentTab = tab;
-      
-      const mainView = document.getElementById('main-view');
-      const adminView = document.getElementById('admin-view');
-      const tabMain = document.getElementById('tab-main');
-      const tabAdmin = document.getElementById('tab-admin');
-      
-      if (!mainView || !adminView) return;
-      
-      // Cleanup listeners when leaving tabs
-      if (tab !== 'admin' && adminUnsubscribe) {
-        adminUnsubscribe();
-        adminUnsubscribe = null;
-      }
-      if (tab !== 'main' && memberListUnsubscribe) {
-        memberListUnsubscribe();
-        memberListUnsubscribe = null;
-      }
-      
-      if (tab === 'main') {
-        mainView.classList.remove('hidden');
-        adminView.classList.add('hidden');
-        if (tabMain) tabMain.classList.add('border-b-2', 'border-[#166534]', 'text-[#166534]');
-        if (tabAdmin) tabAdmin.classList.remove('border-b-2', 'border-[#166534]', 'text-[#166534]');
-        renderMemberList();  // starts async listener + cache render
-      } else {
-        mainView.classList.add('hidden');
-        adminView.classList.remove('hidden');
-        if (tabMain) tabMain.classList.remove('border-b-2', 'border-[#166534]', 'text-[#166534]');
-        if (tabAdmin) tabAdmin.classList.add('border-b-2', 'border-[#166534]', 'text-[#166534]');
-        renderAdminView();  // starts listener
-      }
-    }
-
-    async function renderMemberList() {
-      const container = document.getElementById('member-list');
-      const countEl = document.getElementById('member-count');
-      const noteEl = document.getElementById('member-list-note');
-      const currentGrade = await getCurrentUserGrade();
-      const currentId = getCurrentUser();
-      const canSeeGrades = currentGrade >= 3;
-
-      // Cleanup previous listener
-      if (memberListUnsubscribe) {
-        memberListUnsubscribe();
-        memberListUnsubscribe = null;
-      }
-
-      // Always try cache first for instant render
-      let users = getCachedMembers();
-      renderMembersUI(container, countEl, noteEl, users, canSeeGrades, currentId);
-
-      if (!db) {
-        // fallback
-        users = await loadUsers();
-        saveCachedMembers(users);
-        renderMembersUI(container, countEl, noteEl, users, canSeeGrades, currentId);
-        return;
-      }
-
-      if (users.length === 0) {
-        container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-400 py-3">길드원 정보 불러오는 중...</div>`;
-      }
-
-      const membersCol = db.collection('guild_members');
-
-      // Set real-time listener - will update UI when data changes
-      memberListUnsubscribe = membersCol.onSnapshot(snapshot => {
-        const liveUsers = [];
-        snapshot.forEach(doc => {
-          liveUsers.push({ id: doc.id, ...doc.data() });
-        });
-
-        saveCachedMembers(liveUsers);
-        renderMembersUI(container, countEl, noteEl, liveUsers, canSeeGrades, currentId);
-      }, error => {
-        console.error("Member list snapshot error:", error);
-        // On error, at least show cache
-        const cached = getCachedMembers();
-        if (cached.length) renderMembersUI(container, countEl, noteEl, cached, canSeeGrades, currentId);
-      });
-    }
-
-    // Extracted pure render function for instant updates
-    function renderMembersUI(container, countEl, noteEl, users, canSeeGrades, currentId) {
-      container.innerHTML = '';
-      countEl.textContent = `${users.length}명 가입`;
-      
-      if (noteEl) {
-        noteEl.textContent = canSeeGrades 
-          ? '운영진은 등급을 확인하고 변경할 수 있습니다.' 
-          : '회원가입한 길드원만 표시됩니다 (등급은 비공개)';
-      }
-
-      if (users.length === 0) {
-        container.innerHTML = `<div class="col-span-full text-center text-sm text-slate-400 py-3">아직 가입한 길드원이 없습니다.</div>`;
-        return;
-      }
-      
-      users.forEach(user => {
-        const div = document.createElement('div');
-        div.className = `flex items-center justify-between gap-2 px-4 py-2.5 bg-slate-50 rounded-2xl border`;
-        
-        let gradeHtml = '';
-        if (canSeeGrades) {
-          gradeHtml = `
-            <span class="text-xs px-2 py-0.5 rounded-full ${user.grade === 3 ? 'bg-purple-100 text-purple-700' : user.grade === 2 ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'}">
-              ${getGradeName(user.grade)}
-            </span>
-          `;
-        }
-        
-        let actionHtml = '';
-        if (canSeeGrades && user.id !== currentId) {
-          actionHtml = `
-            <select onchange="changeGradeFromList('${user.id}', this.value)" 
-                    class="text-xs border rounded px-1 py-0.5 bg-white">
-              <option value="1" ${user.grade === 1 ? 'selected' : ''}>신입</option>
-              <option value="2" ${user.grade === 2 ? 'selected' : ''}>정회원</option>
-              <option value="3" ${user.grade === 3 ? 'selected' : ''}>운영진</option>
-            </select>
-          `;
-        }
-        
-        div.innerHTML = `
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-[#166534] rounded-xl flex items-center justify-center text-white text-sm">🐿️</div>
-            <div class="font-medium">${user.id}</div>
-            ${gradeHtml}
-          </div>
-          ${actionHtml}
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    async function changeGradeFromList(targetId, newGrade) {
-      const result = await updateUserGrade(targetId, newGrade);
-      if (result.success) {
-        showToast('등급이 변경되었습니다.');
-        await renderMemberList();
-        // Also refresh admin view if open
-        const adminView = document.getElementById('admin-view');
-        if (adminView && !adminView.classList.contains('hidden')) {
-          await renderAdminView();
-        }
-      } else {
-        showToast(result.message);
-      }
-    }
-
-    async function renderAdminView() {
-      const statsContainer = document.getElementById('admin-stats');
-      const tableBody = document.getElementById('admin-user-table');
-      if (!statsContainer || !tableBody) return;
-
-      // Cleanup previous listener
-      if (adminUnsubscribe) {
-        adminUnsubscribe();
-        adminUnsubscribe = null;
-      }
-
-      // Instant from cache
-      let users = getCachedMembers();
-      renderAdminUI(statsContainer, tableBody, users, getCurrentUser());
-
-      if (!db) {
-        // Fallback
-        users = await loadUsers();
-        saveCachedMembers(users);
-        renderAdminUI(statsContainer, tableBody, users, getCurrentUser());
-        return;
-      }
-
-      const membersCol = db.collection('guild_members');
-      const currentId = getCurrentUser();
-
-      // Real-time listener
-      adminUnsubscribe = membersCol.onSnapshot(snapshot => {
-        const liveUsers = [];
-        snapshot.forEach(doc => {
-          liveUsers.push({ id: doc.id, ...doc.data() });
-        });
-
-        saveCachedMembers(liveUsers);
-        renderAdminUI(statsContainer, tableBody, liveUsers, currentId);
-      }, error => {
-        console.error("Admin snapshot error:", error);
-        if (statsContainer) statsContainer.innerHTML = '<div class="text-red-500">실시간 업데이트 오류. 새로고침하세요.</div>';
-      });
-    }
-
-    function renderAdminUI(statsContainer, tableBody, users, currentId) {
-      const total = users.length;
-      const g1 = users.filter(u => u.grade === 1).length;
-      const g2 = users.filter(u => u.grade === 2).length;
-      const g3 = users.filter(u => u.grade === 3).length;
-      
-      statsContainer.innerHTML = `
-        <div class="bg-slate-50 border rounded-2xl p-3 text-center">
-          <div class="text-xs text-slate-500">총 가입자</div>
-          <div class="text-2xl font-extrabold">${total}명</div>
-        </div>
-        <div class="bg-gray-100 border rounded-2xl p-3 text-center">
-          <div class="text-xs text-gray-600">신입</div>
-          <div class="text-2xl font-extrabold">${g1}명</div>
-        </div>
-        <div class="bg-blue-100 border rounded-2xl p-3 text-center">
-          <div class="text-xs text-blue-600">정회원</div>
-          <div class="text-2xl font-extrabold">${g2}명</div>
-        </div>
-        <div class="bg-purple-100 border rounded-2xl p-3 text-center">
-          <div class="text-xs text-purple-600">운영진</div>
-          <div class="text-2xl font-extrabold">${g3}명</div>
-        </div>
-      `;
-      
-      tableBody.innerHTML = '';
-      users.forEach(user => {
-        const tr = document.createElement('tr');
-        const joined = new Date(user.joined).toLocaleDateString('ko-KR');
-        
-        let gradeSelect = '';
-        if (user.id !== currentId || currentId === '신궁상폐') {
-          gradeSelect = `
-            <select onchange="changeAdminGrade('${user.id}', this.value)" class="text-xs border px-2 py-1 rounded bg-white">
-              <option value="1" ${user.grade===1?'selected':''}>신입</option>
-              <option value="2" ${user.grade===2?'selected':''}>정회원</option>
-              <option value="3" ${user.grade===3?'selected':''}>운영진</option>
-            </select>
-          `;
-        } else {
-          gradeSelect = `<span class="text-xs">${getGradeName(user.grade)}</span>`;
-        }
-        
-        tr.innerHTML = `
-          <td class="py-2 font-medium">${user.id}</td>
-          <td class="py-2">
-            <span class="text-xs px-2 py-0.5 rounded-full ${user.grade === 3 ? 'bg-purple-100 text-purple-700' : user.grade === 2 ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'}">
-              ${getGradeName(user.grade)}
-            </span>
-          </td>
-          <td class="py-2 text-xs text-slate-500">${joined}</td>
-          <td class="py-2">${gradeSelect}</td>
-        `;
-        tableBody.appendChild(tr);
-      });
-    }
-
-    async function changeAdminGrade(targetId, newGrade) {
-      const result = await updateUserGrade(targetId, newGrade);
-      if (result.success) {
-        showToast('등급 변경 완료');
-        await renderAdminView();
-        await renderMemberList(); // sync the other list
-      } else {
-        showToast(result.message);
-      }
-    }
-
-    // ==================== MODALS ====================
-    function showLoginModal() {
-      console.log('showLoginModal called');
-      try {
-        closeModals();
-        const modal = document.getElementById('login-modal');
-        if (modal) {
-          modal.classList.remove('hidden');
-          modal.classList.add('flex');
-          setTimeout(() => {
-            const input = document.getElementById('login-id');
-            if (input) input.focus();
-          }, 100);
-        } else {
-          console.error('login-modal not found');
-        }
-      } catch (err) {
-        console.error('Error in showLoginModal:', err);
-      }
-    }
-
-    function showSignupModal() {
-      console.log('showSignupModal called');
-      try {
-        closeModals();
-        const modal = document.getElementById('signup-modal');
-        if (modal) {
-          modal.classList.remove('hidden');
-          modal.classList.add('flex');
-          setTimeout(() => {
-            const input = document.getElementById('signup-id');
-            if (input) input.focus();
-          }, 100);
-        } else {
-          console.error('signup-modal not found');
-        }
-      } catch (err) {
-        console.error('Error in showSignupModal:', err);
-      }
-    }
-
-    function closeModals() {
-      document.querySelectorAll('[id$="-modal"]').forEach(modal => {
-        modal.classList.remove('flex');
-        modal.classList.add('hidden');
-      });
-    }
-
-    function attachFormListeners() {
-      const loginForm = document.getElementById('login-form');
-      if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-      }
-      const signupForm = document.getElementById('signup-form');
-      if (signupForm) {
-        signupForm.addEventListener('submit', handleSignup);
-      }
-    }
-
-    function attachButtonListeners() {
-      const staticLogin = document.getElementById('static-login-btn');
-      if (staticLogin) {
-        staticLogin.addEventListener('click', showLoginModal);
-      }
-      const staticSignup = document.getElementById('static-signup-btn');
-      if (staticSignup) {
-        staticSignup.addEventListener('click', showSignupModal);
-      }
-    }
-
-    // ==================== FORM HANDLERS ====================
-    async function handleLogin(e) {
-      e.preventDefault();
-      console.log('handleLogin called');
-      
-      try {
-        const id = document.getElementById('login-id').value.trim();
-        const pw = document.getElementById('login-pw').value;
-        
-        const result = await login(id, pw);
-        
-        if (result.success) {
-          closeModals();
-          showToast(`${result.user}님 환영합니다!`);
-          updateNav();
-          await showMainContent(true);
-        } else {
-          showToast(result.message || '로그인 실패');
-        }
-      } catch (err) {
-        console.error('handleLogin error:', err);
-        showToast('로그인 중 오류가 발생했습니다. 콘솔을 확인하세요.');
-      }
-    }
-
-    async function handleSignup(e) {
-      e.preventDefault();
-      console.log('handleSignup called');
-      
-      try {
-        const id = document.getElementById('signup-id').value.trim();
-        const pw = document.getElementById('signup-pw').value;
-        const pw2 = document.getElementById('signup-pw2').value;
-        
-        if (pw !== pw2) {
-          showToast('비밀번호가 일치하지 않습니다.');
-          return;
-        }
-        
-        if (id.length < 2) {
-          showToast('아이디는 2자 이상이어야 합니다.');
-          return;
-        }
-        
-        const result = await signup(id, pw);
-        
-        if (result.success) {
-          closeModals();
-          showToast('회원가입이 완료되었습니다!');
-
-          // Refresh views for currently logged in user (especially master)
-          await renderMemberList();
-          const curr = getCurrentUser();
-          if (curr === '신궁상폐') {
-            // Snapshot will automatically update the open view (no need to switch)
-            await renderAdminView();
-          }
-
-          // Only force login modal if no one is currently logged in
-          if (!curr) {
-            setTimeout(() => {
-              showLoginModal();
-            }, 600);
-          }
-        } else {
-          showToast(result.message || '가입 실패');
-        }
-      } catch (err) {
-        console.error('handleSignup error:', err);
-        showToast('가입 중 오류가 발생했습니다. 콘솔을 확인하세요.');
-      }
-    }
-
-    function logout() {
-      // Cleanup real-time listeners
-      if (adminUnsubscribe) {
-        adminUnsubscribe();
-        adminUnsubscribe = null;
-      }
-      if (memberListUnsubscribe) {
-        memberListUnsubscribe();
-        memberListUnsubscribe = null;
-      }
-      
-      clearCurrentUser();
-      updateNav();
-      showMainContent(false);
-      showToast('로그아웃 되었습니다.');
-    }
-
-    // ==================== TIMERS ====================
-    let intervals = [];
-
-    function startServerTimers() {
-      // Clear previous
-      intervals.forEach(clearInterval);
-      intervals = [];
-
-      // 소환의 결계
-      let h1 = 4, m1 = 12, s1 = 33;
-      const summonEl = document.getElementById('summon-timer');
-      
-      intervals.push(setInterval(() => {
-        s1--;
-        if (s1 < 0) { s1 = 59; m1--; }
-        if (m1 < 0) { m1 = 59; h1--; }
-        if (h1 < 0) { h1 = 4; m1 = 12; s1 = 33; } // reset cycle
-        
-        if (summonEl) summonEl.textContent = `${String(h1).padStart(2,'0')}:${String(m1).padStart(2,'0')}:${String(s1).padStart(2,'0')}`;
-      }, 1000));
-
-      // 어비스 구멍 (next open simulation)
-      let h2 = 18, m2 = 45, s2 = 0;
-      const abyssEl = document.getElementById('abyss-timer');
-      
-      intervals.push(setInterval(() => {
-        s2--;
-        if (s2 < 0) { s2 = 59; m2--; }
-        if (m2 < 0) { m2 = 59; h2--; }
-        if (h2 < 0) { h2 = 23; m2 = 59; s2 = 59; }
-        
-        if (abyssEl) abyssEl.textContent = `${String(h2).padStart(2,'0')}:${String(m2).padStart(2,'0')}:${String(s2).padStart(2,'0')}`;
-      }, 1000));
-
-      // 심층 구멍
-      let h3 = 15, m3 = 22, s3 = 11;
-      const deepEl = document.getElementById('deep-timer');
-      
-      intervals.push(setInterval(() => {
-        s3--;
-        if (s3 < 0) { s3 = 59; m3--; }
-        if (m3 < 0) { m3 = 59; h3--; }
-        if (h3 < 0) { h3 = 23; m3 = 59; s3 = 59; }
-        
-        if (deepEl) deepEl.textContent = `${String(h3).padStart(2,'0')}:${String(m3).padStart(2,'0')}:${String(s3).padStart(2,'0')}`;
-      }, 1000));
-    }
-
-    // ==================== TOAST ====================
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      const text = document.getElementById('toast-text');
-      text.textContent = msg;
-      toast.style.display = 'flex';
-      
-      setTimeout(() => {
-        toast.style.display = 'none';
-      }, 2800);
-    }
-
-    // ==================== INIT ====================
-    async function init() {
-      initFirebase();   // Initialize shared database
-
-      // Ensure master account exists in Firestore (runs once, non-blocking)
-      ensureMasterAccount();
-      
-      // TEMP: Skip login entirely for now - always go straight to main home as master
-      // (login/signup modals and code are kept intact for future use)
-      const currentUser = getCurrentUser() || '신궁상폐';
-      if (!getCurrentUser()) {
-        setCurrentUser(currentUser);
-      }
-      
-      updateNav();
-      
-      // Show structure + welcome immediately (fast path)
-      const notLogged = document.getElementById('not-logged-in');
-      const mainEl = document.getElementById('main-content');
-      if (notLogged) notLogged.classList.add('hidden');
-      if (mainEl) mainEl.classList.remove('hidden');
-      const welcomeEl = document.getElementById('welcome-user');
-      if (welcomeEl) welcomeEl.textContent = getCurrentUser() || '신궁상폐';
-      
-      // Master tabs visibility (sync)
-      const currentId = getCurrentUser();
-      const isMaster = currentId === '신궁상폐';
-      const tabs = document.getElementById('master-tabs');
-      if (tabs) tabs.classList.toggle('hidden', !isMaster);
-      
-      // Start timers immediately (client only, instant)
-      startServerTimers();
-      
-      // Data (members) loads async in background - cache first for instant UI
-      // No blocking the initial paint
-      setTimeout(() => {
-        renderMemberList();
-      }, 10);  // tiny delay to let browser paint first
-      
-      // Keyboard escape
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeModals();
-      });
-
-      attachFormListeners();
-      attachButtonListeners();
-
-      console.log('%c[다람쥐구조대] 로그인 스킵 모드 - 바로 메인으로 로드됨 (로그인 코드는 유지됨)', 'color:#166534');
-    }
-
-    window.onload = () => {
-      init().catch(err => console.error('Init error:', err));
-    };
-  </script>
+  <canvas id="confetti-canvas"></canvas>
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/sounds.js"></script>
+  <script src="/js/ai.js"></script>
+  <script src="/js/client.js"></script>
 </body>
 </html>
