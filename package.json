@@ -1,0 +1,17 @@
+{
+  "name": "daramjwi-guild",
+  "version": "2.0.0",
+  "description": "다람쥐구조대 길드 오목 사이트",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}

@@ -1,33 +1,58 @@
-# 다람쥐구조대 회원제 홈페이지
+# 다람쥐구조대 · 오목
 
-## 주요 변경사항
-- 회원가입 필수 사이트로 변경
-- 아이디 = 닉네임 (개인정보 전혀 물어보지 않음)
-- 비밀번호는 가입자가 직접 설정
-- 마스터 계정 미리 생성됨:
-  - 아이디: **신궁상폐**
-  - 비밀번호: **qlqjs6491!**
+길드 멤버들이 함께 즐기는 실시간 오목 웹사이트입니다.
 
-## 사용 방법
-1. `index.html` 열기
-2. 회원가입 또는 로그인
-3. 로그인 후 서버 타이머 + 길드원 목록 확인 가능
+## 기능
 
-## 현재 페이지
-- `index.html` : 메인 (서버 타이머 + 가입된 길드원 목록)
-- `notice.html` : 길드 공지
+- 닉네임 입장 · 방 만들기/참가 · 관전
+- 실시간 멀티플레이 (Socket.io)
+- 채팅, 준비 시스템, 45초 턴 타이머
+- 무르기 / 기권 / 무승부 제안 / 재대결
+- AI 연습 모드 (쉬움 · 보통 · 어려움)
 
-## 특징
-- 랭킹, 이벤트, 숙제, 공지 탭 모두 제거
-- 순위 캐릭터 모두 삭제 → 실제 회원가입한 사람만 길드원 목록에 표시
-- 소환의 결계, 어비스 구멍, 심층 구멍은 알리사 서버 고정 타이머
-- 회원 데이터는 Firebase Firestore 사용 (실시간 공유)
-- 가입자 현황 탭은 마스터 전용 + 실시간 자동 업데이트 (다른 사람이 가입해도 즉시 반영, 새로고침 불필요)
-- 등급 시스템 (신입/정회원/운영진) - 서로 모르게, 운영진/마스터만 확인+수정 가능
+## 로컬 실행
 
-## 마스터 계정으로 테스트 추천
-아이디: 신궁상폐
-비밀번호: qlqjs6491!
+```bash
+npm install
+npm start
+```
 
-## 보안 주의
-이 사이트는 순수 정적 데모입니다. 실제 운영 시 서버와 데이터베이스가 필요합니다.
+브라우저에서 http://localhost:3000 접속
+
+Windows에서는 `start.bat` 또는 `웹사이트 열기.bat` 더블클릭
+
+## GitHub 업로드
+
+```bash
+cd C:\Projects\daramjwi-guild
+git init
+git add .
+git commit -m "다람쥐구조대 오목 사이트"
+git branch -M main
+git remote add origin https://github.com/아이디/저장소이름.git
+git push -u origin main
+```
+
+> `node_modules/`, `.node/`, `archive-old-guild/` 는 `.gitignore`에 등록되어 자동 제외됩니다.
+
+## 클라우드 배포 (Render)
+
+1. GitHub에 푸시
+2. [Render](https://render.com) → New → Web Service
+3. 저장소 연결
+4. 설정:
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+5. 배포 후 제공되는 URL로 접속
+
+`render.yaml`이 포함되어 있어 Render에서 자동 인식됩니다.
+
+## 기술 스택
+
+- Node.js + Express
+- Socket.io
+- Vanilla HTML / CSS / JavaScript
+
+## 라이선스
+
+MIT
