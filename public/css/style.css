@@ -712,87 +712,119 @@ input[type="text"]::placeholder {
 .request-panel p { margin-bottom: 0.5rem; }
 .request-buttons { display: flex; gap: 0.4rem; }
 
-/* 오목판 */
+/* 오목판
+ * --board-size 는 15로 나누어떨어지는 값을 우선 사용해 서브픽셀 어긋남을 줄임
+ * 격자선은 셀마다 십자로 그려 돌(셀 중심)과 교차점이 항상 일치
+ */
 .board-area {
   display: flex;
   justify-content: center;
   align-items: center;
+  --board-n: 15;
+  --board-size: min(70vw, 70vh, 540px);
+  --board-border: 3px;
+  --label-gutter: 22px;
+  --line-color: var(--bg-board-dark);
 }
 
-.board-wrapper { display: flex; flex-direction: column; align-items: center; }
-.board-row { display: flex; align-items: stretch; }
+.board-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.board-row {
+  display: flex;
+  align-items: stretch;
+}
 
 .board-labels {
   display: grid;
   font-size: 0.65rem;
   color: var(--text-muted);
   font-weight: 600;
+  box-sizing: border-box;
 }
 
+/* 상단 라벨: [거터+테두리][15칸 content] — 셀 중심과 글자 정렬 */
 .board-labels-top {
-  grid-template-columns: 20px repeat(15, 1fr);
-  width: calc(20px + min(70vw, 70vh, 560px));
-  margin-bottom: 2px;
+  grid-template-columns: calc(var(--label-gutter) + var(--board-border)) repeat(15, minmax(0, 1fr));
+  width: calc(var(--label-gutter) + var(--board-size) - var(--board-border));
+  margin-bottom: 4px;
   text-align: center;
 }
 
 .board-labels-left {
-  grid-template-rows: repeat(15, 1fr);
-  width: 20px;
-  margin-right: 2px;
+  grid-template-rows: repeat(15, minmax(0, 1fr));
+  width: var(--label-gutter);
+  margin-right: 0;
+  height: var(--board-size);
+  box-sizing: border-box;
+  padding-top: var(--board-border);
+  padding-bottom: var(--board-border);
   align-content: stretch;
-  height: min(70vw, 70vh, 560px);
 }
 
 .board-labels span {
   display: flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
 }
 
 .board {
   display: grid;
-  grid-template-columns: repeat(15, 1fr);
-  grid-template-rows: repeat(15, 1fr);
-  width: min(70vw, 70vh, 560px);
-  height: min(70vw, 70vh, 560px);
+  grid-template-columns: repeat(15, minmax(0, 1fr));
+  grid-template-rows: repeat(15, minmax(0, 1fr));
+  width: var(--board-size);
+  height: var(--board-size);
+  box-sizing: border-box;
   background: var(--bg-board);
-  border: 3px solid var(--bg-board-dark);
+  border: var(--board-border) solid var(--bg-board-dark);
   border-radius: 4px;
-  box-shadow: var(--shadow), inset 0 0 40px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow), inset 0 0 40px rgba(0, 0, 0, 0.1);
   position: relative;
+  /* 서브픽셀 안티앨리어싱으로 선이 흐려지는 것 완화 */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
+/* 전역 background-grid 제거: 셀 단위 십자선이 교차점 정렬을 보장 */
 .board::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, var(--bg-board-dark) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--bg-board-dark) 1px, transparent 1px);
-  background-size: calc(100% / 14) calc(100% / 14);
-  background-position: calc(100% / 28) calc(100% / 28);
-  pointer-events: none;
-  border-radius: 2px;
+  display: none;
 }
 
 .cell {
   position: relative;
   cursor: pointer;
   z-index: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 각 셀 중심에 가로·세로 선 → 돌 중심과 항상 일치 */
+.cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--line-color), var(--line-color)) center / 100% 1px no-repeat,
+    linear-gradient(var(--line-color), var(--line-color)) center / 1px 100% no-repeat;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .cell.star-point::before {
   content: '';
   position: absolute;
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   background: var(--bg-board-dark);
   border-radius: 50%;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
 }
 
@@ -817,15 +849,20 @@ input[type="text"]::placeholder {
 
 .cell .stone {
   position: absolute;
-  inset: 8%;
+  /* 교차점(셀 중앙)에 돌 중심 정렬 */
+  top: 50%;
+  left: 50%;
+  width: 84%;
+  height: 84%;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
   z-index: 2;
   animation: placeStone 0.2s ease-out;
 }
 
 @keyframes placeStone {
-  from { transform: scale(0); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
 .cell .stone.black {
