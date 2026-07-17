@@ -219,47 +219,99 @@
 
     <!-- AI 연습
          모바일: 헤더/플레이어 UI를 최소화하고 board-area 가 남는 뷰포트 대부분을 차지
-         데스크톱: 기존 2열 레이아웃 유지 -->
+         데스크톱: 기존 2열 레이아웃 유지
+         기능: 흑/백 선택 · 난이도별 악보 보상 · 누적 악보 localStorage -->
     <section id="screen-practice" class="screen">
       <header class="header practice-header">
         <div class="header-left">
           <button id="btn-leave-practice" class="btn btn-ghost btn-sm">← 로비로</button>
           <h2 class="practice-title">AI 연습</h2>
+          <!-- 누적 악보 (localStorage) -->
+          <span class="sheet-badge" id="sheet-total-badge" title="지금까지 모은 악보">🎵 악보 <strong id="sheet-total-count">0</strong></span>
         </div>
         <div class="header-right practice-toolbar">
-          <select id="ai-difficulty" class="select-sm" title="쉬움: 실수 많음 · 보통: 수읽기 · 어려움: 깊은 탐색">
-            <option value="easy">쉬움</option>
-            <option value="normal" selected>보통</option>
-            <option value="hard">어려움</option>
+          <select id="ai-difficulty" class="select-sm" title="쉬움: 보상 없음 · 보통: 승리 시 악보 1곡 · 어려움: 승리 시 악보 2곡">
+            <option value="easy">쉬움 · 연습용</option>
+            <option value="normal" selected>보통 · 악보×1</option>
+            <option value="hard">어려움 · 악보×2</option>
           </select>
           <button id="btn-practice-restart" class="btn btn-secondary btn-sm" type="button">다시</button>
-          <!-- 모바일 보드 확대 / 전체화면 토글 -->
           <button id="btn-expand-board" class="btn btn-ghost btn-sm btn-expand-board" type="button" title="보드 크게 보기" aria-pressed="false">⛶ 크게</button>
         </div>
       </header>
-      <div class="game-layout practice-layout">
+
+      <!-- 대국 전 설정: 돌 색 선택 + 팁 -->
+      <div id="practice-setup" class="practice-setup">
+        <div class="practice-setup-card">
+          <div class="practice-setup-mascot" aria-hidden="true">🐿️</div>
+          <h3>대국 준비</h3>
+          <p class="practice-setup-desc">돌 색깔을 고르고 AI와 한 판 두어 보세요.<br>
+            <strong>보통·어려움</strong>에서 이기면 <strong>악보</strong>를 받아요!</p>
+
+          <p class="practice-setup-label">내 돌 선택</p>
+          <div class="color-pick" role="group" aria-label="돌 색깔 선택">
+            <button type="button" class="color-pick-btn selected" data-color="black" id="pick-black">
+              <span class="color-pick-stone black"></span>
+              <span class="color-pick-text">
+                <strong>흑돌</strong>
+                <small>선공 · 먼저 둡니다</small>
+              </span>
+            </button>
+            <button type="button" class="color-pick-btn" data-color="white" id="pick-white">
+              <span class="color-pick-stone white"></span>
+              <span class="color-pick-text">
+                <strong>백돌</strong>
+                <small>후공 · AI가 먼저 둡니다</small>
+              </span>
+            </button>
+          </div>
+
+          <p class="practice-setup-hint">💡 팁: 다섯 알을 일직선(가로·세로·대각)으로 놓으면 승리!<br>
+            쉬움은 연습용(보상 없음) · 보통 승리 시 악보 1곡 · 어려움 2곡</p>
+
+          <button type="button" id="btn-practice-start" class="btn btn-primary btn-lg">대국 시작</button>
+        </div>
+      </div>
+
+      <div class="game-layout practice-layout practice-play hidden" id="practice-play">
         <aside class="sidebar sidebar-left practice-sidebar">
           <div class="player-card active" id="practice-player">
-            <div class="player-stone black"></div>
+            <div class="player-stone black" id="practice-player-stone"></div>
             <div class="player-info">
-              <span class="player-label">나 (흑)</span>
+              <span class="player-label" id="practice-player-label">나 (흑)</span>
               <span class="player-name" id="practice-nickname">플레이어</span>
             </div>
           </div>
           <div class="player-card" id="practice-ai">
-            <div class="player-stone white"></div>
+            <div class="player-stone white" id="practice-ai-stone"></div>
             <div class="player-info">
-              <span class="player-label">AI (백)</span>
+              <span class="player-label" id="practice-ai-label">AI (백)</span>
               <span class="player-name">오목봇</span>
             </div>
           </div>
-          <div class="status-box" id="practice-status">당신의 차례 (흑)</div>
+          <div class="status-box" id="practice-status">당신의 차례입니다</div>
         </aside>
         <main class="board-area practice-board-area">
           <div class="board-wrapper">
             <div id="practice-board" class="board"></div>
           </div>
         </main>
+      </div>
+
+      <!-- 승리/패배 결과 모달 -->
+      <div id="practice-result" class="practice-result hidden" role="dialog" aria-modal="true" aria-labelledby="practice-result-title">
+        <div class="practice-result-card">
+          <div class="practice-result-emoji" id="practice-result-emoji">🎉</div>
+          <h3 id="practice-result-title">승리!</h3>
+          <p class="practice-result-msg" id="practice-result-msg"></p>
+          <p class="practice-result-reward hidden" id="practice-result-reward"></p>
+          <p class="practice-result-total" id="practice-result-total"></p>
+          <div class="practice-result-actions">
+            <button type="button" id="btn-result-rematch" class="btn btn-primary">한 판 더!</button>
+            <button type="button" id="btn-result-setup" class="btn btn-secondary">설정 변경</button>
+            <button type="button" id="btn-result-lobby" class="btn btn-ghost">로비로</button>
+          </div>
+        </div>
       </div>
     </section>
   </div>

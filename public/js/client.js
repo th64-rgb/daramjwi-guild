@@ -80,6 +80,15 @@ let practiceBoard = null;
 let practiceBoardEl = null;
 let practiceCurrent = 'black';
 let practiceOver = false;
+/** 플레이어가 선택한 돌 색 ('black' | 'white') */
+let practicePlayerColor = localStorage.getItem('omok_practice_color') || 'black';
+/** 이번 판 보상 지급 여부 (중복 방지) */
+let practiceRewardGiven = false;
+
+const SHEET_STORAGE_KEY = 'omok_sheet_music_total';
+const DIFF_LABEL = { easy: '쉬움', normal: '보통', hard: '어려움' };
+/** 난이도별 승리 악보 보상 (쉬움=연습용 0) */
+const SHEET_REWARD = { easy: 0, normal: 1, hard: 2 };
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -237,17 +246,14 @@ nicknameForm.addEventListener('submit', async (e) => {
 
 $('#btn-practice-from-home')?.addEventListener('click', () => {
   nickname = nicknameInput.value.trim() || nickname || '플레이어';
-  $('#practice-nickname').textContent = nickname;
-  startPractice();
-  showScreen('practice');
+  localStorage.setItem('omok_nickname', nickname);
+  openPracticeScreen();
 });
 
 $('#btn-dismiss-warning')?.addEventListener('click', () => {
   $('#server-warning')?.classList.add('hidden');
-  nickname = nicknameInput.value.trim() || '플레이어';
-  $('#practice-nickname').textContent = nickname;
-  startPractice();
-  showScreen('practice');
+  nickname = nicknameInput.value.trim() || nickname || '플레이어';
+  openPracticeScreen();
 });
 
 $('#btn-logout').addEventListener('click', () => {
@@ -692,28 +698,132 @@ document.querySelectorAll('.emoji-btn').forEach((btn) => {
 });
 
 // ── AI 연습 ──
-$('#btn-practice').addEventListener('click', () => {
+
+function getSheetTotal() {
+  const n = parseInt(localStorage.getItem(SHEET_STORAGE_KEY) || '0', 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function setSheetTotal(n) {
+  const v = Math.max(0, Math.floor(n));
+  localStorage.setItem(SHEET_STORAGE_KEY, String(v));
+  refreshSheetBadge();
+  return v;
+}
+
+function refreshSheetBadge() {
+  const el = $('#sheet-total-count');
+  if (el) el.textContent = String(getSheetTotal());
+}
+
+function practiceAiColor() {
+  return practicePlayerColor === 'black' ? 'white' : 'black';
+}
+
+function colorKo(color) {
+  return color === 'black' ? '흑' : '백';
+}
+
+/** 사이드바 라벨·돌 색 표시 갱신 */
+function updatePracticePlayerUI() {
+  const mine = practicePlayerColor;
+  const ai = practiceAiColor();
+  const pStone = $('#practice-player-stone');
+  const aStone = $('#practice-ai-stone');
+  if (pStone) pStone.className = `player-stone ${mine}`;
+  if (aStone) aStone.className = `player-stone ${ai}`;
+  const pLabel = $('#practice-player-label');
+  const aLabel = $('#practice-ai-label');
+  if (pLabel) pLabel.textContent = `나 (${colorKo(mine)})`;
+  if (aLabel) aLabel.textContent = `AI (${colorKo(ai)})`;
+}
+
+function setPracticeColorPick(color) {
+  practicePlayerColor = color === 'white' ? 'white' : 'black';
+  localStorage.setItem('omok_practice_color', practicePlayerColor);
+  document.querySelectorAll('.color-pick-btn').forEach((btn) => {
+    btn.classList.toggle('selected', btn.dataset.color === practicePlayerColor);
+  });
+}
+
+function showPracticeSetup() {
+  $('#practice-setup')?.classList.remove('hidden');
+  $('#practice-play')?.classList.add('hidden');
+  $('#practice-result')?.classList.add('hidden');
+  practiceOver = true; // 보드 입력 차단
+  setPracticeExpanded(false);
+  refreshSheetBadge();
+  setPracticeColorPick(practicePlayerColor);
+}
+
+function openPracticeScreen() {
   $('#practice-nickname').textContent = nickname || '플레이어';
-  startPractice();
+  refreshSheetBadge();
+  showPracticeSetup();
   showScreen('practice');
-});
+  ensurePracticeResizeObserver();
+  requestAnimationFrame(() => updatePracticeBoardSize());
+}
+
+$('#btn-practice').addEventListener('click', openPracticeScreen);
 
 $('#btn-leave-practice').addEventListener('click', () => {
   setPracticeExpanded(false);
+  showPracticeSetup();
   showScreen('lobby');
 });
-$('#btn-practice-restart').addEventListener('click', () => startPractice());
-$('#ai-difficulty').addEventListener('change', () => startPractice());
+
+$('#btn-practice-restart').addEventListener('click', () => {
+  // 대국 중이면 같은 설정으로 재시작, 설정 화면이면 유지
+  if ($('#practice-play') && !$('#practice-play').classList.contains('hidden')) {
+    startPractice();
+  } else {
+    showPracticeSetup();
+  }
+});
+
+$('#ai-difficulty').addEventListener('change', () => {
+  // 대국 중 난이도 변경 시 새 판
+  if ($('#practice-play') && !$('#practice-play').classList.contains('hidden') && !practiceOver) {
+    startPractice();
+  } else if ($('#practice-play') && !$('#practice-play').classList.contains('hidden') && practiceOver) {
+    // 종료 후 난이도만 바꿔 둔 경우 — 재시작은 버튼으로
+  }
+});
 
 $('#btn-expand-board')?.addEventListener('click', () => {
   const next = !document.body.classList.contains('practice-expanded');
   setPracticeExpanded(next);
 });
 
+// 돌 색 선택
+document.querySelectorAll('.color-pick-btn').forEach((btn) => {
+  btn.addEventListener('click', () => setPracticeColorPick(btn.dataset.color));
+});
+
+$('#btn-practice-start')?.addEventListener('click', () => startPractice());
+
+$('#btn-result-rematch')?.addEventListener('click', () => startPractice());
+$('#btn-result-setup')?.addEventListener('click', () => showPracticeSetup());
+$('#btn-result-lobby')?.addEventListener('click', () => {
+  showPracticeSetup();
+  setPracticeExpanded(false);
+  showScreen('lobby');
+});
+
 function startPractice() {
   practiceBoard = OmokAI.createBoard();
-  practiceCurrent = 'black';
+  practiceCurrent = 'black'; // 오목은 항상 흑 선공
   practiceOver = false;
+  practiceRewardGiven = false;
+
+  $('#practice-setup')?.classList.add('hidden');
+  $('#practice-result')?.classList.add('hidden');
+  $('#practice-play')?.classList.remove('hidden');
+  $('#practice-status')?.classList.remove('win', 'lose', 'draw');
+
+  updatePracticePlayerUI();
+
   practiceBoardEl = $('#practice-board');
   practiceBoardEl.innerHTML = '';
   for (let r = 0; r < BOARD_SIZE; r++) {
@@ -726,11 +836,25 @@ function startPractice() {
       practiceBoardEl.appendChild(cell);
     }
   }
-  $('#practice-status').textContent = '당신의 차례 (흑)';
-  $('#practice-player').classList.add('active');
-  $('#practice-ai').classList.remove('active');
+
+  const mine = practicePlayerColor;
+  if (mine === 'black') {
+    setPracticeTurnUI(true);
+    $('#practice-status').textContent = '당신의 차례입니다 · 흑이 먼저 둡니다';
+  } else {
+    setPracticeTurnUI(false);
+    $('#practice-status').textContent = 'AI(흑)가 먼저 둡니다…';
+    // 백 선택 시 AI 선공
+    setTimeout(() => runAiTurn(), 280);
+  }
+
   ensurePracticeResizeObserver();
   requestAnimationFrame(() => updatePracticeBoardSize());
+}
+
+function setPracticeTurnUI(playerTurn) {
+  $('#practice-player')?.classList.toggle('active', playerTurn);
+  $('#practice-ai')?.classList.toggle('active', !playerTurn);
 }
 
 /** Extra UI delay so "생각 중" is visible; hard relies on search time itself. */
@@ -740,34 +864,49 @@ function practiceThinkDelay(diff) {
   return 250 + Math.random() * 200;
 }
 
+function isBoardFull(board) {
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (!board[r][c]) return false;
+    }
+  }
+  return true;
+}
+
 async function onPracticeClick(e) {
-  if (practiceOver || practiceCurrent !== 'black') return;
+  if (practiceOver) return;
+  if (practiceCurrent !== practicePlayerColor) return;
+
   const cell = e.currentTarget;
-  const r = +cell.dataset.row, c = +cell.dataset.col;
+  const r = +cell.dataset.row;
+  const c = +cell.dataset.col;
   if (practiceBoard[r][c]) return;
 
-  placePracticeStone(r, c, 'black');
+  placePracticeStone(r, c, practicePlayerColor);
   if (practiceOver) return;
 
-  practiceCurrent = 'white';
-  $('#practice-status').textContent = 'AI 생각 중...';
-  $('#practice-player').classList.remove('active');
-  $('#practice-ai').classList.add('active');
+  await runAiTurn();
+}
+
+async function runAiTurn() {
+  if (practiceOver) return;
+  const ai = practiceAiColor();
+  practiceCurrent = ai;
+  setPracticeTurnUI(false);
+  $('#practice-status').textContent = '🐿️ 오목봇이 수를 고민하는 중…';
 
   const diff = $('#ai-difficulty').value;
   await new Promise((res) => setTimeout(res, practiceThinkDelay(diff)));
   if (practiceOver) return;
 
-  // getMoveAsync yields to the event loop so the status text paints first
-  const [ar, ac] = await OmokAI.getMoveAsync(practiceBoard, 'white', diff);
+  const [ar, ac] = await OmokAI.getMoveAsync(practiceBoard, ai, diff);
   if (practiceOver) return;
 
-  placePracticeStone(ar, ac, 'white');
+  placePracticeStone(ar, ac, ai);
   if (!practiceOver) {
-    practiceCurrent = 'black';
-    $('#practice-status').textContent = '당신의 차례 (흑)';
-    $('#practice-player').classList.add('active');
-    $('#practice-ai').classList.remove('active');
+    practiceCurrent = practicePlayerColor;
+    setPracticeTurnUI(true);
+    $('#practice-status').textContent = `당신의 차례입니다 · ${colorKo(practicePlayerColor)}돌`;
   }
 }
 
@@ -775,6 +914,7 @@ function placePracticeStone(r, c, color) {
   practiceBoard[r][c] = color;
   SoundManager.place();
   const cell = practiceBoardEl.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+  if (!cell) return;
   cell.classList.add('occupied');
   const el = document.createElement('div');
   el.className = `stone ${color}`;
@@ -782,11 +922,115 @@ function placePracticeStone(r, c, color) {
 
   if (OmokAI.checkWin(practiceBoard, r, c, color)) {
     practiceOver = true;
-    SoundManager.win();
-    $('#practice-status').textContent = color === 'black' ? '당신이 이겼습니다! 🎉' : 'AI가 이겼습니다.';
-    if (color === 'black') launchConfetti();
+    const playerWon = color === practicePlayerColor;
+    finishPractice(playerWon ? 'win' : 'lose');
+    return;
+  }
+
+  if (isBoardFull(practiceBoard)) {
+    practiceOver = true;
+    finishPractice('draw');
   }
 }
+
+/**
+ * 대국 종료 처리 + 난이도별 악보 보상
+ * @param {'win'|'lose'|'draw'} outcome
+ */
+function finishPractice(outcome) {
+  const diff = $('#ai-difficulty')?.value || 'normal';
+  const diffName = DIFF_LABEL[diff] || diff;
+  const status = $('#practice-status');
+  const result = $('#practice-result');
+  const emoji = $('#practice-result-emoji');
+  const title = $('#practice-result-title');
+  const msg = $('#practice-result-msg');
+  const rewardEl = $('#practice-result-reward');
+  const totalEl = $('#practice-result-total');
+
+  status?.classList.remove('win', 'lose', 'draw');
+
+  if (outcome === 'win') {
+    SoundManager.win();
+    launchConfetti();
+    status?.classList.add('win');
+
+    let gained = 0;
+    if (!practiceRewardGiven) {
+      gained = SHEET_REWARD[diff] ?? 0;
+      if (gained > 0) {
+        setSheetTotal(getSheetTotal() + gained);
+      }
+      practiceRewardGiven = true;
+    }
+
+    if (gained > 0) {
+      status.textContent = `🎉 승리! ${diffName} 클리어 — 악보 ${gained}곡 획득!`;
+      if (emoji) emoji.textContent = '🎉🎵';
+      if (title) title.textContent = '승리! 다람쥐가 환호해요!';
+      if (msg) {
+        msg.textContent =
+          diff === 'hard'
+            ? '어려움 난이도를 뚫어냈습니다. 정말 대단해요!'
+            : '멋진 한 판이었어요. 악보가 추가되었습니다!';
+      }
+      if (rewardEl) {
+        rewardEl.classList.remove('hidden');
+        rewardEl.innerHTML = `🎵 <strong>악보 ${gained}곡</strong> 획득!`;
+      }
+    } else {
+      // 쉬움: 보상 없음
+      status.textContent = '🎉 승리! 연습 판 클리어 — 다음엔 보통·어려움에 도전해 보세요!';
+      if (emoji) emoji.textContent = '🎉';
+      if (title) title.textContent = '연습 승리!';
+      if (msg) {
+        msg.textContent =
+          '잘했어요! 쉬움은 연습용이라 악보 보상은 없어요. 보통/어려움에서 이기면 악보를 받습니다.';
+      }
+      if (rewardEl) {
+        rewardEl.classList.remove('hidden');
+        rewardEl.textContent = '악보 보상 없음 (쉬움 · 연습 모드)';
+      }
+    }
+  } else if (outcome === 'lose') {
+    SoundManager.error();
+    status?.classList.add('lose');
+    status.textContent = '아쉽네요… 오목봇의 승리! 다시 도전해 볼까요?';
+    if (emoji) emoji.textContent = '😅';
+    if (title) title.textContent = '패배… 하지만 다음엔!';
+    if (msg) {
+      msg.textContent =
+        diff === 'hard'
+          ? '어려움은 만만치 않죠. 한 판 더 두며 감각을 익혀 보세요!'
+          : '괜찮아요. 막는 수와 만드는 수를 의식하면 금방 늘어요.';
+    }
+    if (rewardEl) {
+      rewardEl.classList.add('hidden');
+      rewardEl.textContent = '';
+    }
+  } else {
+    status?.classList.add('draw');
+    status.textContent = '무승부! 판이 가득 찼습니다.';
+    if (emoji) emoji.textContent = '🤝';
+    if (title) title.textContent = '무승부!';
+    if (msg) msg.textContent = '치열한 대국이었어요. 한 판 더 두어 볼까요?';
+    if (rewardEl) {
+      rewardEl.classList.add('hidden');
+      rewardEl.textContent = '';
+    }
+  }
+
+  if (totalEl) {
+    totalEl.innerHTML = `보유 악보 합계: <strong>🎵 ${getSheetTotal()}곡</strong>`;
+  }
+
+  result?.classList.remove('hidden');
+  refreshSheetBadge();
+}
+
+// 초기 악보 배지
+refreshSheetBadge();
+setPracticeColorPick(practicePlayerColor);
 
 // ── 자동 입장 ──
 setTimeout(async () => {
