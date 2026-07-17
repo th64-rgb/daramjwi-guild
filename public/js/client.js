@@ -675,7 +675,14 @@ function startPractice() {
   $('#practice-ai').classList.remove('active');
 }
 
-function onPracticeClick(e) {
+/** Extra UI delay so "생각 중" is visible; hard relies on search time itself. */
+function practiceThinkDelay(diff) {
+  if (diff === 'easy') return 180 + Math.random() * 220;
+  if (diff === 'hard') return 80 + Math.random() * 120;
+  return 250 + Math.random() * 200;
+}
+
+async function onPracticeClick(e) {
   if (practiceOver || practiceCurrent !== 'black') return;
   const cell = e.currentTarget;
   const r = +cell.dataset.row, c = +cell.dataset.col;
@@ -689,18 +696,21 @@ function onPracticeClick(e) {
   $('#practice-player').classList.remove('active');
   $('#practice-ai').classList.add('active');
 
-  setTimeout(() => {
-    if (practiceOver) return;
-    const diff = $('#ai-difficulty').value;
-    const [ar, ac] = OmokAI.getMove(practiceBoard, 'white', diff);
-    placePracticeStone(ar, ac, 'white');
-    if (!practiceOver) {
-      practiceCurrent = 'black';
-      $('#practice-status').textContent = '당신의 차례 (흑)';
-      $('#practice-player').classList.add('active');
-      $('#practice-ai').classList.remove('active');
-    }
-  }, 400 + Math.random() * 300);
+  const diff = $('#ai-difficulty').value;
+  await new Promise((res) => setTimeout(res, practiceThinkDelay(diff)));
+  if (practiceOver) return;
+
+  // getMoveAsync yields to the event loop so the status text paints first
+  const [ar, ac] = await OmokAI.getMoveAsync(practiceBoard, 'white', diff);
+  if (practiceOver) return;
+
+  placePracticeStone(ar, ac, 'white');
+  if (!practiceOver) {
+    practiceCurrent = 'black';
+    $('#practice-status').textContent = '당신의 차례 (흑)';
+    $('#practice-player').classList.add('active');
+    $('#practice-ai').classList.remove('active');
+  }
 }
 
 function placePracticeStone(r, c, color) {
