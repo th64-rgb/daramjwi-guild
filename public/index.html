@@ -217,24 +217,28 @@
       </div>
     </section>
 
-    <!-- AI 연습 -->
+    <!-- AI 연습
+         모바일: 헤더/플레이어 UI를 최소화하고 board-area 가 남는 뷰포트 대부분을 차지
+         데스크톱: 기존 2열 레이아웃 유지 -->
     <section id="screen-practice" class="screen">
-      <header class="header">
+      <header class="header practice-header">
         <div class="header-left">
           <button id="btn-leave-practice" class="btn btn-ghost btn-sm">← 로비로</button>
-          <h2>AI 연습</h2>
+          <h2 class="practice-title">AI 연습</h2>
         </div>
-        <div class="header-right">
+        <div class="header-right practice-toolbar">
           <select id="ai-difficulty" class="select-sm" title="쉬움: 실수 많음 · 보통: 수읽기 · 어려움: 깊은 탐색">
             <option value="easy">쉬움</option>
             <option value="normal" selected>보통</option>
             <option value="hard">어려움</option>
           </select>
-          <button id="btn-practice-restart" class="btn btn-secondary btn-sm">다시 시작</button>
+          <button id="btn-practice-restart" class="btn btn-secondary btn-sm" type="button">다시</button>
+          <!-- 모바일 보드 확대 / 전체화면 토글 -->
+          <button id="btn-expand-board" class="btn btn-ghost btn-sm btn-expand-board" type="button" title="보드 크게 보기" aria-pressed="false">⛶ 크게</button>
         </div>
       </header>
       <div class="game-layout practice-layout">
-        <aside class="sidebar sidebar-left">
+        <aside class="sidebar sidebar-left practice-sidebar">
           <div class="player-card active" id="practice-player">
             <div class="player-stone black"></div>
             <div class="player-info">
@@ -251,7 +255,7 @@
           </div>
           <div class="status-box" id="practice-status">당신의 차례 (흑)</div>
         </aside>
-        <main class="board-area">
+        <main class="board-area practice-board-area">
           <div class="board-wrapper">
             <div id="practice-board" class="board"></div>
           </div>

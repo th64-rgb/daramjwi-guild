@@ -581,6 +581,16 @@ input[type="text"]::placeholder {
   justify-content: center;
 }
 
+/* 연습 화면 전용 (데스크톱 기본) */
+.practice-header .btn-expand-board {
+  /* 데스크톱에서는 보통 불필요 — 좁은 창에서만 표시 */
+  display: none;
+}
+
+.practice-board-area {
+  min-height: 0;
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -1290,6 +1300,266 @@ input[type="text"]::placeholder {
     }
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+ * AI 연습 모바일 최적화
+ * - 화면 높이를 flex 로 꽉 채우고 board-area 가 남는 공간 전부 사용
+ * - JS(updatePracticeBoardSize)가 --board-size 를 가용 정사각형으로 설정
+ * - 헤더·플레이어 카드·길드 네비를 압축해 보드 우선
+ * ═══════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .practice-header .btn-expand-board {
+    display: inline-flex;
+    white-space: nowrap;
+  }
+
+  /* 연습 중: 앱이 뷰포트 높이를 쓰도록 */
+  body.practice-active {
+    overflow: hidden;
+  }
+
+  body.practice-active .app {
+    min-height: 0;
+    height: calc(100dvh - var(--nav-h));
+    max-height: calc(100dvh - var(--nav-h));
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.practice-active #screen-practice,
+  body.practice-active #screen-practice.active {
+    flex: 1;
+    min-height: 0 !important; /* .screen 의 min-height:100vh 무력화 */
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* 길드 네비 압축 (연습 중) */
+  body.practice-active .guild-nav-inner {
+    padding: 0.35rem 0.75rem;
+  }
+
+  body.practice-active .guild-icon {
+    font-size: 1.25rem;
+  }
+
+  body.practice-active .guild-name {
+    font-size: 0.9rem;
+  }
+
+  body.practice-active .guild-badge {
+    display: none;
+  }
+
+  body.practice-active {
+    --nav-h: 40px;
+  }
+
+  /* 헤더 한 줄 압축 */
+  #screen-practice .practice-header {
+    flex-shrink: 0;
+    padding: 0.3rem 0.45rem;
+    gap: 0.35rem;
+    min-height: 0;
+  }
+
+  #screen-practice .practice-header .header-left,
+  #screen-practice .practice-header .header-right {
+    gap: 0.35rem;
+  }
+
+  #screen-practice .practice-title {
+    display: none; /* "AI 연습" 제목 숨겨 가로 공간 확보 */
+  }
+
+  #screen-practice .practice-header .btn-sm {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  #screen-practice .practice-header .select-sm {
+    padding: 0.28rem 0.35rem;
+    font-size: 0.8rem;
+    max-width: 5.5rem;
+  }
+
+  /* 레이아웃: 세로 flex — 사이드바(얇음) + 보드(flex:1) */
+  #screen-practice .practice-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    grid-template-rows: none;
+    justify-items: stretch;
+    align-items: stretch;
+    padding: 0.2rem 0.25rem 0.35rem;
+    gap: 0.3rem;
+    overflow: hidden;
+  }
+
+  /* 플레이어 정보: 한 줄 스트립 */
+  #screen-practice .practice-sidebar {
+    flex: 0 0 auto;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: 100%;
+    gap: 0.3rem;
+    order: 0;
+  }
+
+  #screen-practice .practice-sidebar .player-card {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 0.25rem 0.4rem;
+    gap: 0.3rem;
+    border-radius: 8px;
+  }
+
+  #screen-practice .practice-sidebar .player-stone {
+    width: 18px;
+    height: 18px;
+  }
+
+  #screen-practice .practice-sidebar .player-label {
+    font-size: 0.6rem;
+    line-height: 1.1;
+  }
+
+  #screen-practice .practice-sidebar .player-name {
+    font-size: 0.72rem;
+    max-width: 4.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #screen-practice .practice-sidebar .status-box {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    margin: 0;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.78rem;
+    line-height: 1.25;
+    border-radius: 8px;
+  }
+
+  /* 보드 슬롯: 남는 세로 공간 전부 — JS 가 여기서 min(w,h) 측정 */
+  #screen-practice .practice-board-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 폴백 크기 (JS 전 / ResizeObserver 전) */
+    --board-size: min(100vw - 8px, 55dvh);
+    --board-border: 2px;
+    --label-gutter: 0px; /* 연습판은 좌표 라벨 없음 */
+  }
+
+  #screen-practice .practice-board-area .board-wrapper {
+    width: var(--board-size);
+    height: var(--board-size);
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  #screen-practice .practice-board-area .board {
+    width: 100%;
+    height: 100%;
+    max-width: var(--board-size);
+    max-height: var(--board-size);
+  }
+
+  /* 터치: 탭 지연 제거 + 돌 조금 더 크게 */
+  #screen-practice .cell {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #screen-practice .cell .stone {
+    width: 90%;
+    height: 90%;
+  }
+
+  /* ── 보드 크게(확장) 모드 ── */
+  body.practice-expanded .guild-nav {
+    display: none !important;
+  }
+
+  body.practice-expanded .app {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  body.practice-expanded {
+    --nav-h: 0px;
+  }
+
+  body.practice-expanded #screen-practice .practice-sidebar {
+    display: none; /* 확장 시 플레이어 카드 숨김 → 보드 최대화 */
+  }
+
+  body.practice-expanded #screen-practice .practice-header {
+    padding: 0.25rem 0.4rem;
+  }
+
+  /* 확장 모드에서도 상태는 헤더 근처에 보이도록 status 를 헤더 아래로 얇게 —
+     status-box 는 sidebar 안이므로 확장 시 숨김. 헤더 버튼 옆에 상태 유지가 어려워
+     practice-sidebar 대신 status 만 보이게 재표시 */
+  body.practice-expanded #screen-practice .practice-sidebar {
+    display: flex;
+  }
+
+  body.practice-expanded #screen-practice .practice-sidebar .player-card {
+    display: none;
+  }
+
+  body.practice-expanded #screen-practice .practice-sidebar .status-box {
+    flex: 1;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  body.practice-expanded #screen-practice .practice-board-area {
+    --board-size: min(100vw - 4px, calc(100dvh - 72px));
+  }
+}
+
+@media (max-width: 600px) {
+  /* 더 좁은 폰: 닉네임 숨기고 돌+짧은 라벨만 */
+  #screen-practice .practice-sidebar .player-name {
+    display: none;
+  }
+
+  #screen-practice .practice-sidebar .player-card {
+    padding: 0.22rem 0.35rem;
+  }
+
+  #screen-practice .btn-expand-board {
+    padding: 0.3rem 0.4rem;
+    font-size: 0.75rem;
+  }
+}
+
+@supports not (height: 100dvh) {
+  @media (max-width: 900px) {
+    body.practice-active .app {
+      height: calc(100vh - var(--nav-h));
+      max-height: calc(100vh - var(--nav-h));
+    }
+    body.practice-expanded .app {
+      height: 100vh;
+      max-height: 100vh;
+    }
+  }
+}
 </style>
 </head>
 <body>
@@ -1501,24 +1771,28 @@ input[type="text"]::placeholder {
       </div>
     </section>
 
-    <!-- AI 연습 -->
+    <!-- AI 연습
+         모바일: 헤더/플레이어 UI를 최소화하고 board-area 가 남는 뷰포트 대부분을 차지
+         데스크톱: 기존 2열 레이아웃 유지 -->
     <section id="screen-practice" class="screen">
-      <header class="header">
+      <header class="header practice-header">
         <div class="header-left">
           <button id="btn-leave-practice" class="btn btn-ghost btn-sm">← 로비로</button>
-          <h2>AI 연습</h2>
+          <h2 class="practice-title">AI 연습</h2>
         </div>
-        <div class="header-right">
+        <div class="header-right practice-toolbar">
           <select id="ai-difficulty" class="select-sm" title="쉬움: 실수 많음 · 보통: 수읽기 · 어려움: 깊은 탐색">
             <option value="easy">쉬움</option>
             <option value="normal" selected>보통</option>
             <option value="hard">어려움</option>
           </select>
-          <button id="btn-practice-restart" class="btn btn-secondary btn-sm">다시 시작</button>
+          <button id="btn-practice-restart" class="btn btn-secondary btn-sm" type="button">다시</button>
+          <!-- 모바일 보드 확대 / 전체화면 토글 -->
+          <button id="btn-expand-board" class="btn btn-ghost btn-sm btn-expand-board" type="button" title="보드 크게 보기" aria-pressed="false">⛶ 크게</button>
         </div>
       </header>
       <div class="game-layout practice-layout">
-        <aside class="sidebar sidebar-left">
+        <aside class="sidebar sidebar-left practice-sidebar">
           <div class="player-card active" id="practice-player">
             <div class="player-stone black"></div>
             <div class="player-info">
@@ -1535,7 +1809,7 @@ input[type="text"]::placeholder {
           </div>
           <div class="status-box" id="practice-status">당신의 차례 (흑)</div>
         </aside>
-        <main class="board-area">
+        <main class="board-area practice-board-area">
           <div class="board-wrapper">
             <div id="practice-board" class="board"></div>
           </div>
@@ -2362,6 +2636,54 @@ function showScreen(name) {
   Object.values(screens).forEach((s) => s.classList.remove('active'));
   screens[name].classList.add('active');
   if (name !== 'game') stopLocalTimer();
+
+  // 연습 화면 전용 body 클래스 → 모바일에서 길드 네비/여백 축소, 보드 크기 계산
+  document.body.classList.toggle('practice-active', name === 'practice');
+  if (name !== 'practice') {
+    setPracticeExpanded(false);
+  } else {
+    // 레이아웃 적용 후 보드 크기 재계산
+    requestAnimationFrame(() => updatePracticeBoardSize());
+  }
+}
+
+/** 연습 보드: board-area 의 실제 가용 영역에서 가능한 최대 정사각형 */
+function updatePracticeBoardSize() {
+  const area = document.querySelector('#screen-practice .practice-board-area');
+  if (!area || !document.body.classList.contains('practice-active')) return;
+
+  const w = area.clientWidth;
+  const h = area.clientHeight;
+  if (w < 40 || h < 40) return;
+
+  // 15칸 정렬을 위해 15의 배수로 스냅 (서브픽셀 선 어긋남 완화)
+  let side = Math.floor(Math.min(w, h));
+  side = Math.max(180, Math.floor(side / 15) * 15);
+  area.style.setProperty('--board-size', `${side}px`);
+}
+
+let practiceResizeObserver = null;
+function ensurePracticeResizeObserver() {
+  if (practiceResizeObserver || typeof ResizeObserver === 'undefined') return;
+  const area = document.querySelector('#screen-practice .practice-board-area');
+  if (!area) return;
+  practiceResizeObserver = new ResizeObserver(() => updatePracticeBoardSize());
+  practiceResizeObserver.observe(area);
+  window.addEventListener('resize', updatePracticeBoardSize);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(updatePracticeBoardSize, 150);
+  });
+}
+
+function setPracticeExpanded(on) {
+  document.body.classList.toggle('practice-expanded', !!on);
+  const btn = document.getElementById('btn-expand-board');
+  if (btn) {
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.textContent = on ? '⛶ 축소' : '⛶ 크게';
+    btn.title = on ? '보드 축소' : '보드 크게 보기';
+  }
+  requestAnimationFrame(() => updatePracticeBoardSize());
 }
 
 function showToast(message, duration = 3000) {
@@ -2918,9 +3240,17 @@ $('#btn-practice').addEventListener('click', () => {
   showScreen('practice');
 });
 
-$('#btn-leave-practice').addEventListener('click', () => showScreen('lobby'));
+$('#btn-leave-practice').addEventListener('click', () => {
+  setPracticeExpanded(false);
+  showScreen('lobby');
+});
 $('#btn-practice-restart').addEventListener('click', () => startPractice());
 $('#ai-difficulty').addEventListener('change', () => startPractice());
+
+$('#btn-expand-board')?.addEventListener('click', () => {
+  const next = !document.body.classList.contains('practice-expanded');
+  setPracticeExpanded(next);
+});
 
 function startPractice() {
   practiceBoard = OmokAI.createBoard();
@@ -2941,6 +3271,8 @@ function startPractice() {
   $('#practice-status').textContent = '당신의 차례 (흑)';
   $('#practice-player').classList.add('active');
   $('#practice-ai').classList.remove('active');
+  ensurePracticeResizeObserver();
+  requestAnimationFrame(() => updatePracticeBoardSize());
 }
 
 /** Extra UI delay so "생각 중" is visible; hard relies on search time itself. */

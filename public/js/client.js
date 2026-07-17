@@ -94,6 +94,54 @@ function showScreen(name) {
   Object.values(screens).forEach((s) => s.classList.remove('active'));
   screens[name].classList.add('active');
   if (name !== 'game') stopLocalTimer();
+
+  // 연습 화면 전용 body 클래스 → 모바일에서 길드 네비/여백 축소, 보드 크기 계산
+  document.body.classList.toggle('practice-active', name === 'practice');
+  if (name !== 'practice') {
+    setPracticeExpanded(false);
+  } else {
+    // 레이아웃 적용 후 보드 크기 재계산
+    requestAnimationFrame(() => updatePracticeBoardSize());
+  }
+}
+
+/** 연습 보드: board-area 의 실제 가용 영역에서 가능한 최대 정사각형 */
+function updatePracticeBoardSize() {
+  const area = document.querySelector('#screen-practice .practice-board-area');
+  if (!area || !document.body.classList.contains('practice-active')) return;
+
+  const w = area.clientWidth;
+  const h = area.clientHeight;
+  if (w < 40 || h < 40) return;
+
+  // 15칸 정렬을 위해 15의 배수로 스냅 (서브픽셀 선 어긋남 완화)
+  let side = Math.floor(Math.min(w, h));
+  side = Math.max(180, Math.floor(side / 15) * 15);
+  area.style.setProperty('--board-size', `${side}px`);
+}
+
+let practiceResizeObserver = null;
+function ensurePracticeResizeObserver() {
+  if (practiceResizeObserver || typeof ResizeObserver === 'undefined') return;
+  const area = document.querySelector('#screen-practice .practice-board-area');
+  if (!area) return;
+  practiceResizeObserver = new ResizeObserver(() => updatePracticeBoardSize());
+  practiceResizeObserver.observe(area);
+  window.addEventListener('resize', updatePracticeBoardSize);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(updatePracticeBoardSize, 150);
+  });
+}
+
+function setPracticeExpanded(on) {
+  document.body.classList.toggle('practice-expanded', !!on);
+  const btn = document.getElementById('btn-expand-board');
+  if (btn) {
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.textContent = on ? '⛶ 축소' : '⛶ 크게';
+    btn.title = on ? '보드 축소' : '보드 크게 보기';
+  }
+  requestAnimationFrame(() => updatePracticeBoardSize());
 }
 
 function showToast(message, duration = 3000) {
@@ -650,9 +698,17 @@ $('#btn-practice').addEventListener('click', () => {
   showScreen('practice');
 });
 
-$('#btn-leave-practice').addEventListener('click', () => showScreen('lobby'));
+$('#btn-leave-practice').addEventListener('click', () => {
+  setPracticeExpanded(false);
+  showScreen('lobby');
+});
 $('#btn-practice-restart').addEventListener('click', () => startPractice());
 $('#ai-difficulty').addEventListener('change', () => startPractice());
+
+$('#btn-expand-board')?.addEventListener('click', () => {
+  const next = !document.body.classList.contains('practice-expanded');
+  setPracticeExpanded(next);
+});
 
 function startPractice() {
   practiceBoard = OmokAI.createBoard();
@@ -673,6 +729,8 @@ function startPractice() {
   $('#practice-status').textContent = '당신의 차례 (흑)';
   $('#practice-player').classList.add('active');
   $('#practice-ai').classList.remove('active');
+  ensurePracticeResizeObserver();
+  requestAnimationFrame(() => updatePracticeBoardSize());
 }
 
 /** Extra UI delay so "생각 중" is visible; hard relies on search time itself. */
